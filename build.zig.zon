@@ -1,6 +1,12 @@
 .{
     .name = "zig-8",
     .version = "0.1.0",
+    .dependencies = .{
+        .sokol = .{
+            .url = "git+https://github.com/floooh/sokol-zig.git#e190830fd57293addc64019ca61d7fcf38dcdf5f",
+            .hash = "12201d3b9cf340a49a6774cfa59b5b2d0ab8660e908de59f884d3ff162a3d5d17905",
+        },
+    },
     .minimum_zig_version = "0.13.0",
     .paths = .{
         "src",
