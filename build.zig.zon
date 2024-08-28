@@ -6,6 +6,10 @@
             .url = "git+https://github.com/floooh/sokol-zig.git#e190830fd57293addc64019ca61d7fcf38dcdf5f",
             .hash = "12201d3b9cf340a49a6774cfa59b5b2d0ab8660e908de59f884d3ff162a3d5d17905",
         },
+        .nfd = .{
+            .url = "git+https://github.com/fabioarnold/nfd-zig.git#ad81729d33da30d5f4fd23718debec48245121ca",
+            .hash = "1220a679380847513262c8c5c474d4a415f9ecc4921c8c6aefbdbdce66cf2aa19ceb",
+        },
     },
     .minimum_zig_version = "0.13.0",
     .paths = .{
