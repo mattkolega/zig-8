@@ -1,5 +1,5 @@
 const app = @import("application.zig");
 
-pub fn main() !void {
+pub fn main() void {
     app.run();
 }

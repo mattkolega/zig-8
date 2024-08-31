@@ -1,9 +1,13 @@
+const std = @import("std");
+
 const sokol = @import("sokol");
 const slog = sokol.log;
 const sgfx = sokol.gfx;
 const sapp = sokol.app;
 const sglue = sokol.glue;
-const print = @import("std").debug.print;
+
+const emu = @import("emulator.zig");
+const log = @import("logger.zig");
 
 // Constants
 const WINDOW_TITLE = "ZIG-8";
@@ -12,6 +16,11 @@ const SCREEN_WIDTH = 64 * SCREEN_MULTI_FACTOR;
 const SCREEN_HEIGHT = 32 * SCREEN_MULTI_FACTOR;
 
 var passAction: sgfx.PassAction = .{};
+
+var arena: std.heap.ArenaAllocator = undefined;
+var allocator: std.mem.Allocator = undefined;
+
+var chip8Context: emu.Chip8Context = undefined;
 
 export fn init() void {
     sgfx.setup(.{
@@ -22,7 +31,22 @@ export fn init() void {
         .load_action = .CLEAR,
         .clear_value = .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1.0 },
     };
-    print("Backend: {}\n", .{sgfx.queryBackend()});
+
+    log.info("Backend: {}", .{sgfx.queryBackend()});
+
+    arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    allocator = arena.allocator();
+
+    // Keep running createContext until it either succeeds or file dialog is closed
+    while (emu.createContext(allocator)) |value| {
+        chip8Context = value;
+        break;
+    } else |err| switch (err) {
+        error.FileOpenCancel => {
+            sapp.quit();
+        },
+        else => {},
+    }
 }
 
 export fn frame() void {
@@ -32,6 +56,7 @@ export fn frame() void {
 }
 
 export fn cleanup() void {
+    arena.deinit();
     sgfx.shutdown();
 }
 
