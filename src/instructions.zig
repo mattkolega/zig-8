@@ -31,7 +31,7 @@ pub fn op_2NNN(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Skips instruction if VX and NN are equal
-pub fn op_3NNN(context: *Chip8Context, instruction: u16) void {
+pub fn op_3XNN(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const value = utils.getLastHalfInstruct(instruction);
 
