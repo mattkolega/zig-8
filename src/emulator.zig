@@ -1,7 +1,9 @@
 const std = @import("std");
 const nfd = @import("nfd");
 
+const opcodes = @import("instructions.zig");
 const log = @import("logger.zig");
+const utils = @import("utils.zig");
 
 pub const Chip8Context = struct {
     memory: [4096]u8,            // 4KB of RAM
@@ -82,4 +84,60 @@ fn loadFontData(context: *Chip8Context) void {
     }
 }
 
-// pub fn tick(context: *Chip8Context) void {}
+pub fn tick(context: *Chip8Context, rand: std.Random) void {
+    // Fetch instruction
+    const byteOne = context.memory[context.pc];
+    const byteTwo = context.memory[context.pc + 1];
+    const instruction = byteOne << 8 | byteTwo;
+    context.pc += 2;
+
+    // Decode and execute
+    switch (utils.getFirstNibble(instruction)) {
+        0x0 => switch (utils.getLastHalfInstruct(instruction)) {
+            0xE0 => opcodes.op_00E0(context),
+            0xEE => opcodes.op_00EE(context),
+        },
+        0x1 => opcodes.op_1NNN(context, instruction),
+        0x2 => opcodes.op_2NNN(context, instruction),
+        0x3 => opcodes.op_3XNN(context, instruction),
+        0x4 => opcodes.op_4XNN(context, instruction),
+        0x5 => opcodes.op_5XY0(context, instruction),
+        0x6 => opcodes.op_6XNN(context, instruction),
+        0x7 => opcodes.op_7XNN(context, instruction),
+        0x8 => switch (utils.getFourthNibble(instruction)) {
+            0x0 => opcodes.op_8XY0(context, instruction),
+            0x1 => opcodes.op_8XY1(context, instruction),
+            0x2 => opcodes.op_8XY2(context, instruction),
+            0x3 => opcodes.op_8XY3(context, instruction),
+            0x4 => opcodes.op_8XY4(context, instruction),
+            0x5 => opcodes.op_8XY5(context, instruction),
+            0x6 => opcodes.op_8XY6(context, instruction),
+            0x7 => opcodes.op_8XY7(context, instruction),
+            0xE => opcodes.op_8XYE(context, instruction),
+        },
+        0x9 => opcodes.op_9XY0(context, instruction),
+        0xA => opcodes.op_ANNN(context, instruction),
+        0xB => opcodes.op_BNNN(context, instruction),
+        0xC => opcodes.op_CXNN(context, instruction, rand),
+        0xD => opcodes.op_DXYN(context, instruction),
+        0xE => switch (utils.getLastHalfInstruct(instruction)) {
+            0x9E => opcodes.op_EX9E(context, instruction),
+            0xA1 => opcodes.op_EXA1(context, instruction),
+        },
+        0xF => switch (utils.getThirdNibble(instruction)) {
+            0x0 => switch (utils.getFourthNibble(instruction)) {
+                0x7 => opcodes.op_FX07(context, instruction),
+                0xA => opcodes.op_FX0A(context, instruction),
+            },
+            0x1 => switch(utils.getFourthNibble(instruction)) {
+                0x5 => opcodes.op_FX15(context, instruction),
+                0x8 => opcodes.op_FX18(context, instruction),
+                0xE => opcodes.op_FX1E(context, instruction),
+            },
+            0x2 => opcodes.op_FX29(context, instruction),
+            0x3 => opcodes.op_FX33(context, instruction),
+            0x5 => opcodes.op_FX55(context, instruction),
+            0x6 => opcodes.op_FX65(context, instruction),
+        },
+    }
+}
