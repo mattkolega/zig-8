@@ -15,12 +15,16 @@ const SCREEN_MULTI_FACTOR = 20;
 const SCREEN_WIDTH = 64 * SCREEN_MULTI_FACTOR;
 const SCREEN_HEIGHT = 32 * SCREEN_MULTI_FACTOR;
 
-var passAction: sgfx.PassAction = .{};
+// Global variables
+var prng: std.rand.DefaultPrng = undefined;
+var rand: std.Random = undefined;
 
 var arena: std.heap.ArenaAllocator = undefined;
 var allocator: std.mem.Allocator = undefined;
 
 var chip8Context: emu.Chip8Context = undefined;
+
+var passAction: sgfx.PassAction = .{};
 
 export fn init() void {
     sgfx.setup(.{
@@ -34,6 +38,18 @@ export fn init() void {
 
     log.info("Backend: {}", .{sgfx.queryBackend()});
 
+    // Setup random number generation
+    prng = std.rand.DefaultPrng.init(blk: {
+        var seed: u64 = undefined;
+        std.posix.getrandom(std.mem.asBytes(&seed)) catch {
+            log.err("{s}", .{"Failed to initialise random number generator."});
+            sapp.quit();
+        };
+        break :blk seed;
+    });
+    rand = prng.random();
+
+    // Setup allocator
     arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     allocator = arena.allocator();
 
