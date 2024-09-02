@@ -7,13 +7,15 @@ const utils = @import("utils.zig");
 
 /// Clears the display
 pub fn op_00E0(context: *Chip8Context) void {
-    @memset(context.display, 0);
+    for (&(context.display)) |*row| {
+        @memset(row, false);
+    }
 }
 
 /// Returns from subroutine
 pub fn op_00EE(context: *Chip8Context) void {
     context.sp += 1;
-    context.pc = context.sp[context.stack];
+    context.pc = context.stack[context.sp];
 }
 
 /// Sets program counter to address NNN
@@ -131,7 +133,7 @@ pub fn op_8XY5(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
-    const vF: u8 = undefined;
+    var vF: u8 = undefined;
 
     if (context.v[xRegisterIndex] > context.v[yRegisterIndex]) {
         vF = 1;
@@ -159,7 +161,7 @@ pub fn op_8XY7(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
-    const vF: u8 = undefined;
+    var vF: u8 = undefined;
 
     if (context.v[yRegisterIndex] > context.v[xRegisterIndex]) {
         vF = 1;
@@ -172,7 +174,7 @@ pub fn op_8XY7(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Sets VX to VY and shifts VX 1 bit to the left
-pub fn op_8XYE(context: Chip8Context, instruction: u16) void {
+pub fn op_8XYE(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
@@ -231,19 +233,19 @@ pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
         const currentYCoord = yCoord + n;  // Increment yCoord for each row
         if (currentYCoord > 31) break;
         const spriteByte = context.memory[context.index + n];
-        var bitmask = 0b10000000;
-        var bitshiftAmount = 7;
+        var bitmask: u8 = 0b10000000;
+        var bitshiftAmount: usize = 7;
 
         for (0..8) |i| {
             const currentXCoord = xCoord + i;  // Increment xCoord for each column
             if (currentXCoord > 63) break;
-            const spriteBit = (spriteByte & bitmask) >> bitshiftAmount;
+            const spriteBit: u8 = (spriteByte & bitmask) >> @intCast(bitshiftAmount);
             bitmask >>= 1;
-            bitshiftAmount -= 1;
+            if (bitshiftAmount >= 1) bitshiftAmount -= 1;  // Avoid overflow by only decrementing when 1 or above
 
-            if (spriteBit ^ context.display[currentYCoord][currentXCoord]) {  // Binary XOR to check if pixel should be on
+            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
                 context.display[currentYCoord][currentXCoord] = true;
-            } else if (spriteBit & context.display[currentYCoord][currentXCoord]) {  // Binary AND to check if pixel should be off
+            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
                 context.display[currentYCoord][currentXCoord] = false;
                 context.v[0xF] = 1;
             }
@@ -281,18 +283,18 @@ pub fn op_FX0A(context: *Chip8Context, instruction: u16) void {
     for (0..16) |i| {
         if (context.previousKeyState[i] == true) {
             if (context.keyState[i] == false) {
-                context.v[xRegisterIndex] = i;
-                @memset(context.previousKeyState, 0);  // Clear array
+                context.v[xRegisterIndex] = @intCast(i);
+                @memset(&(context.previousKeyState), false);  // Clear array
                 return;
             }
         }
     }
 
-    @memset(context.previousKeyState, 0);  // Clear array
+    @memset(&(context.previousKeyState), false);  // Clear array
 
     // If no keys were released, check for pressed keys to add to previousKeyState to be checked next cycle
     for (0..16) |i| {
-        if (context.keyState == true) {
+        if (context.keyState[i] == true) {
             context.previousKeyState[i] = true;
         }
     }
@@ -330,7 +332,7 @@ pub fn op_FX33(context: *Chip8Context, instruction: u16) void {
 
     const number = context.v[xRegisterIndex];
 
-    const numberDigits: [3]u8 = undefined;
+    var numberDigits: [3]u8 = undefined;
     numberDigits[0] = (number / 100) % 10;
     numberDigits[1] = (number / 10) % 10;
     numberDigits[2] = number % 10;
