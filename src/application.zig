@@ -162,7 +162,50 @@ export fn cleanup() void {
     sgfx.shutdown();
 }
 
-export fn event() void {}
+export fn input(e: ?*const sapp.Event) void {
+    const event = e.?;
+    if (event.type == .KEY_DOWN) {
+        switch(event.key_code) {
+            ._1  => chip8Context.keyState[0x1] = true,
+            ._2  => chip8Context.keyState[0x2] = true,
+            ._3  => chip8Context.keyState[0x3] = true,
+            ._4  => chip8Context.keyState[0xC] = true,
+            .Q   => chip8Context.keyState[0x4] = true,
+            .W   => chip8Context.keyState[0x5] = true,
+            .E   => chip8Context.keyState[0x6] = true,
+            .R   => chip8Context.keyState[0xD] = true,
+            .A   => chip8Context.keyState[0x7] = true,
+            .S   => chip8Context.keyState[0x8] = true,
+            .D   => chip8Context.keyState[0x9] = true,
+            .F   => chip8Context.keyState[0xE] = true,
+            .Z   => chip8Context.keyState[0xA] = true,
+            .X   => chip8Context.keyState[0x0] = true,
+            .C   => chip8Context.keyState[0xB] = true,
+            .V   => chip8Context.keyState[0xF] = true,
+            else => {},
+        }
+    } else if (event.type == .KEY_UP) {
+        switch(event.key_code) {
+            ._1  => chip8Context.keyState[0x1] = false,
+            ._2  => chip8Context.keyState[0x2] = false,
+            ._3  => chip8Context.keyState[0x3] = false,
+            ._4  => chip8Context.keyState[0xC] = false,
+            .Q   => chip8Context.keyState[0x4] = false,
+            .W   => chip8Context.keyState[0x5] = false,
+            .E   => chip8Context.keyState[0x6] = false,
+            .R   => chip8Context.keyState[0xD] = false,
+            .A   => chip8Context.keyState[0x7] = false,
+            .S   => chip8Context.keyState[0x8] = false,
+            .D   => chip8Context.keyState[0x9] = false,
+            .F   => chip8Context.keyState[0xE] = false,
+            .Z   => chip8Context.keyState[0xA] = false,
+            .X   => chip8Context.keyState[0x0] = false,
+            .C   => chip8Context.keyState[0xB] = false,
+            .V   => chip8Context.keyState[0xF] = false,
+            else => {},
+        }
+    }
+}
 
 pub fn run() void {
     sapp.run(.{
@@ -171,6 +214,7 @@ pub fn run() void {
         .height = SCREEN_HEIGHT * SCREEN_SCALE_FACTOR,
         .init_cb = init,
         .frame_cb = frame,
+        .event_cb = input,
         .cleanup_cb = cleanup,
         .logger = .{ .func = slog.func },
     });
