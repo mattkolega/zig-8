@@ -145,6 +145,6 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
             0x6 => opcodes.op_FX65(context, instruction),
             else => log.warn("{s}: {X}", .{"Encountered unknown instruction", instruction}),
         },
-        else => log.warn("{s}: {X}", .{"Encountered unknown instruction", instruction})
+        else => log.warn("{s}: {X}", .{"Encountered unknown instruction", instruction}),
     }
 }

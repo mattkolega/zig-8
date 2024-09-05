@@ -14,7 +14,7 @@ pub fn op_00E0(context: *Chip8Context) void {
 
 /// Returns from subroutine
 pub fn op_00EE(context: *Chip8Context) void {
-    context.sp += 1;
+    context.sp -= 1;
     context.pc = context.stack[context.sp];
 }
 
@@ -58,7 +58,7 @@ pub fn op_5XY0(context: *Chip8Context, instruction: u16) void {
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
     if (context.v[xRegisterIndex] == context.v[yRegisterIndex]) {
-        context. pc += 2;
+        context.pc += 2;
     }
 }
 
@@ -75,7 +75,7 @@ pub fn op_7XNN(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const value = utils.getLastHalfInstruct(instruction);
 
-    context.v[xRegisterIndex] += value;
+    context.v[xRegisterIndex] +%= value;  // The +%= operator adds with overflow
 }
 
 /// Sets VX to value of VY
@@ -118,10 +118,10 @@ pub fn op_8XY4(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
-    const sum = context.v[xRegisterIndex] + context.v[yRegisterIndex];
-    context.v[xRegisterIndex] = sum & 0xFF;
+    const sumResult = @addWithOverflow(context.v[xRegisterIndex], context.v[yRegisterIndex]);  // Store sum result and overflow bit in tuple
+    context.v[xRegisterIndex] = sumResult[0];
 
-    if (sum > 255) { // Test for overflow
+    if (sumResult[1] != 0) { // Test for overflow
         context.v[0xF] = 1;
     } else {
         context.v[0xF] = 0;
@@ -135,13 +135,13 @@ pub fn op_8XY5(context: *Chip8Context, instruction: u16) void {
 
     var vF: u8 = undefined;
 
-    if (context.v[xRegisterIndex] > context.v[yRegisterIndex]) {
+    if (context.v[xRegisterIndex] >= context.v[yRegisterIndex]) {
         vF = 1;
     } else {
         vF = 0;
     }
 
-    context.v[xRegisterIndex] -= context.v[yRegisterIndex];
+    context.v[xRegisterIndex] -%= context.v[yRegisterIndex];  // The -% operator allows integer underflow
     context.v[0xF] = vF;
 }
 
@@ -163,13 +163,13 @@ pub fn op_8XY7(context: *Chip8Context, instruction: u16) void {
 
     var vF: u8 = undefined;
 
-    if (context.v[yRegisterIndex] > context.v[xRegisterIndex]) {
+    if (context.v[yRegisterIndex] >= context.v[xRegisterIndex]) {
         vF = 1;
     } else {
         vF = 0;
     }
 
-    context.v[xRegisterIndex] = context.v[yRegisterIndex] - context.v[xRegisterIndex];
+    context.v[xRegisterIndex] = context.v[yRegisterIndex] -% context.v[xRegisterIndex];  // The -% operator allows integer underflow
     context.v[0xF] = vF;
 }
 
@@ -243,7 +243,7 @@ pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
             bitmask >>= 1;
             if (bitshiftAmount >= 1) bitshiftAmount -= 1;  // Avoid overflow by only decrementing when 1 or above
 
-            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
+            if (spriteBit != @intFromBool(context.display[currentYCoord][currentXCoord])) {  // Binary XOR to check if pixel should be on
                 context.display[currentYCoord][currentXCoord] = true;
             } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
                 context.display[currentYCoord][currentXCoord] = false;
