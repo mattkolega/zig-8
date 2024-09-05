@@ -30,3 +30,33 @@ pub fn getLastHalfInstruct(instruction: u16) u8 {
 pub fn getLastThreeNibbles(instruction: u16) u16 {
     return instruction & 0x0FFF;
 }
+
+//
+// TESTS
+//
+
+const expectEqual = @import("std").testing.expectEqual;
+
+test "getFirstNibble" {
+    try expectEqual(0x1, getFirstNibble(0x1234));
+}
+
+test "getSecondNibble" {
+    try expectEqual(0x2, getSecondNibble(0x1234));
+}
+
+test "getThirdNibble" {
+    try expectEqual(0x3, getThirdNibble(0x1234));
+}
+
+test "getFourthNibble" {
+    try expectEqual(0x4, getFourthNibble(0x1234));
+}
+
+test "getLastHalfInstruct" {
+    try expectEqual(0x34, getLastHalfInstruct(0x1234));
+}
+
+test "getLastThreeNibbles" {
+    try expectEqual(0x234, getLastThreeNibbles(0x1234));
+}
