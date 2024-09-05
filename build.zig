@@ -24,6 +24,16 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("sokol", depSokol.module("sokol"));
     exe.root_module.addImport("nfd", depNfd.module("nfd"));
 
+    const cDebugFlags = [_][]const u8{};
+    const cReleaseFlags = [_][]const u8{"-g", "-O2"};
+    const flags = if (optimize == .Debug) &cDebugFlags else &cReleaseFlags;
+
+    exe.addIncludePath(b.path("lib/miniaudio"));
+    exe.addCSourceFile(.{
+        .file = b.path("lib/miniaudio_impl.c"),
+        .flags = flags,
+    });
+
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
