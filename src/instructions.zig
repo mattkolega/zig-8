@@ -243,7 +243,7 @@ pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
             bitmask >>= 1;
             if (bitshiftAmount >= 1) bitshiftAmount -= 1;  // Avoid overflow by only decrementing when 1 or above
 
-            if (spriteBit != @intFromBool(context.display[currentYCoord][currentXCoord])) {  // Binary XOR to check if pixel should be on
+            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
                 context.display[currentYCoord][currentXCoord] = true;
             } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
                 context.display[currentYCoord][currentXCoord] = false;
