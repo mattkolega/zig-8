@@ -7,6 +7,7 @@ const sgl = sokol.gl;
 const sapp = sokol.app;
 const sglue = sokol.glue;
 
+const audio = @import("audio.zig");
 const emu = @import("emulator.zig");
 const log = @import("logger.zig");
 
@@ -21,11 +22,11 @@ const CYCLES_PER_FRAME = 500 / FPS;
 // Global variables
 var prng: std.rand.DefaultPrng = undefined;
 var rand: std.Random = undefined;
-
 var arena: std.heap.ArenaAllocator = undefined;
 var allocator: std.mem.Allocator = undefined;
 
 var chip8Context: emu.Chip8Context = undefined;
+var audioContext: audio.AudioContext = undefined;
 
 var quitRequested = false;
 
@@ -94,6 +95,12 @@ export fn init() void {
         .min_filter = sgfx.Filter.NEAREST,
         .mag_filter = sgfx.Filter.NEAREST,
     });
+
+    audioContext = audio.createContext(allocator) catch {
+        log.err("{s}", "Failed to setup audio context.");
+        quitRequested = true;
+        return;
+    };
 }
 
 export fn frame() void {
@@ -111,6 +118,9 @@ export fn frame() void {
 
     if (chip8Context.soundTimer > 0) {
         chip8Context.soundTimer -= 1;
+        audio.startPlayback(&audioContext) catch return;
+    } else {
+        audio.stopPlayback(&audioContext) catch return;
     }
 
     updateFramebuffer();
@@ -157,9 +167,10 @@ fn render() void {
 }
 
 export fn cleanup() void {
-    arena.deinit();
+    audio.destroyContext(&audioContext);
     sgl.shutdown();
     sgfx.shutdown();
+    arena.deinit();
 }
 
 export fn input(e: ?*const sapp.Event) void {
