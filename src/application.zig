@@ -97,7 +97,7 @@ export fn init() void {
     });
 
     audioContext = audio.createContext(allocator) catch {
-        log.err("{s}", "Failed to setup audio context.");
+        log.err("{s}", .{"Failed to setup audio context."});
         quitRequested = true;
         return;
     };
