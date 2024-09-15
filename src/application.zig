@@ -19,21 +19,32 @@ const SCREEN_HEIGHT = 32;
 const FPS = 60;
 const CYCLES_PER_FRAME = 500 / FPS;
 
+pub const InterpreterType = enum {
+    chip8,
+};
+
+pub const Parameters = struct {
+    cyclesPerSecond: usize       = 500,
+    machineType: InterpreterType = InterpreterType.chip8,
+};
+
 // Global variables
 var prng: std.rand.DefaultPrng = undefined;
 var rand: std.Random = undefined;
-var arena: std.heap.ArenaAllocator = undefined;
+
 var allocator: std.mem.Allocator = undefined;
+
+var interpreterParams: Parameters = undefined;
 
 var chip8Context: emu.Chip8Context = undefined;
 var audioContext: audio.AudioContext = undefined;
-
-var quitRequested = false;
 
 var passAction: sgfx.PassAction = .{};
 var framebuffer: [SCREEN_HEIGHT][SCREEN_WIDTH]u32 = undefined;
 var framebufferImage: sgfx.Image = undefined;
 var sampler: sgfx.Sampler = undefined;
+
+var quitRequested = false;
 
 export fn init() void {
     sgfx.setup(.{
@@ -64,10 +75,6 @@ export fn init() void {
         break :blk seed;
     });
     rand = prng.random();
-
-    // Setup allocator
-    arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    allocator = arena.allocator();
 
     // Keep running createContext until it either succeeds or file dialog is closed
     while (emu.createContext(allocator)) |value| {
@@ -108,7 +115,7 @@ export fn frame() void {
 
     const frameDeadline: u64 = @intCast(std.time.nanoTimestamp() + (std.time.ns_per_s / FPS));
 
-    for (0..CYCLES_PER_FRAME) |_| {
+    for (0..(interpreterParams.cyclesPerSecond / FPS)) |_| {
         emu.tick(&chip8Context, rand);
     }
 
@@ -170,7 +177,6 @@ export fn cleanup() void {
     audio.destroyContext(&audioContext);
     sgl.shutdown();
     sgfx.shutdown();
-    arena.deinit();
 }
 
 export fn input(e: ?*const sapp.Event) void {
@@ -218,7 +224,10 @@ export fn input(e: ?*const sapp.Event) void {
     }
 }
 
-pub fn run() void {
+pub fn run(params: Parameters, alloc: std.mem.Allocator) void {
+    interpreterParams = params;
+    allocator = alloc;
+
     sapp.run(.{
         .window_title = WINDOW_TITLE,
         .width = SCREEN_WIDTH * SCREEN_SCALE_FACTOR,
