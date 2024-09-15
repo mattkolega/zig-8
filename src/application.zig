@@ -67,10 +67,7 @@ export fn init() void {
     prng = std.rand.DefaultPrng.init(blk: {
         var seed: u64 = undefined;
         std.posix.getrandom(std.mem.asBytes(&seed)) catch {
-            log.err("{s}", .{"Failed to initialise random number generator."});
-            sapp.quit();
-            quitRequested = true;
-            return;
+            @panic("Failed to initialise random number generator.");
         };
         break :blk seed;
     });
@@ -104,9 +101,7 @@ export fn init() void {
     });
 
     audioContext = audio.createContext(allocator) catch {
-        log.err("{s}", .{"Failed to setup audio context."});
-        quitRequested = true;
-        return;
+        @panic("Failed to setup audio context.");
     };
 }
 
@@ -125,9 +120,9 @@ export fn frame() void {
 
     if (chip8Context.soundTimer > 0) {
         chip8Context.soundTimer -= 1;
-        audio.startPlayback(&audioContext) catch return;
+        audio.startPlayback(&audioContext) catch {};
     } else {
-        audio.stopPlayback(&audioContext) catch return;
+        audio.stopPlayback(&audioContext) catch {};
     }
 
     updateFramebuffer();
