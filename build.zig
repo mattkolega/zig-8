@@ -14,6 +14,11 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const defClap = b.dependency("clap", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const exe = b.addExecutable(.{
         .name = "zig-8",
         .root_source_file = b.path("src/main.zig"),
@@ -23,6 +28,7 @@ pub fn build(b: *std.Build) void {
 
     exe.root_module.addImport("sokol", depSokol.module("sokol"));
     exe.root_module.addImport("nfd", depNfd.module("nfd"));
+    exe.root_module.addImport("clap", defClap.module("clap"));
 
     const cDebugFlags = [_][]const u8{};
     const cReleaseFlags = [_][]const u8{"-g", "-O2"};

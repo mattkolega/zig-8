@@ -10,6 +10,10 @@
             .url = "git+https://github.com/fabioarnold/nfd-zig.git#ad81729d33da30d5f4fd23718debec48245121ca",
             .hash = "1220a679380847513262c8c5c474d4a415f9ecc4921c8c6aefbdbdce66cf2aa19ceb",
         },
+        .clap = .{
+            .url = "https://github.com/Hejsil/zig-clap/archive/refs/tags/0.9.1.tar.gz",
+            .hash = "122062d301a203d003547b414237229b09a7980095061697349f8bef41be9c30266b",
+        },
     },
     .minimum_zig_version = "0.13.0",
     .paths = .{
