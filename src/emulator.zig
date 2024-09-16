@@ -1,11 +1,18 @@
 const std = @import("std");
+
 const nfd = @import("nfd");
 
 const opcodes = @import("instructions.zig");
 const log = @import("logger.zig");
 const utils = @import("utils.zig");
 
+pub const InterpreterType = enum {
+    chip8,
+    schip,
+};
+
 pub const Chip8Context = struct {
+    type: InterpreterType,       // Variant which is being emulated
     memory: [4096]u8,            // 4KB of RAM
     display: [32][64]bool,       // Display is 64 pixels wide and 32 pixels high
     stack: [16]u16,
