@@ -103,7 +103,7 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
         0x0 => switch (utils.getLastHalfInstruct(instruction)) {
             0xE0 => opcodes.op_00E0(context),
             0xEE => opcodes.op_00EE(context),
-            else => log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction}),
+            else => logUnknownInstruct(instruction),
         },
         0x1 => opcodes.op_1NNN(context, instruction),
         0x2 => opcodes.op_2NNN(context, instruction),
@@ -122,7 +122,7 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
             0x6 => opcodes.op_8XY6(context, instruction),
             0x7 => opcodes.op_8XY7(context, instruction),
             0xE => opcodes.op_8XYE(context, instruction),
-            else => log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction}),
+            else => logUnknownInstruct(instruction),
         },
         0x9 => opcodes.op_9XY0(context, instruction),
         0xA => opcodes.op_ANNN(context, instruction),
@@ -132,26 +132,31 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
         0xE => switch (utils.getLastHalfInstruct(instruction)) {
             0x9E => opcodes.op_EX9E(context, instruction),
             0xA1 => opcodes.op_EXA1(context, instruction),
-            else => log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction}),
+            else => logUnknownInstruct(instruction),
         },
         0xF => switch (utils.getThirdNibble(instruction)) {
             0x0 => switch (utils.getFourthNibble(instruction)) {
                 0x7 => opcodes.op_FX07(context, instruction),
                 0xA => opcodes.op_FX0A(context, instruction),
-                else => log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction}),
+                else => logUnknownInstruct(instruction),
             },
             0x1 => switch(utils.getFourthNibble(instruction)) {
                 0x5 => opcodes.op_FX15(context, instruction),
                 0x8 => opcodes.op_FX18(context, instruction),
                 0xE => opcodes.op_FX1E(context, instruction),
-                else => log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction}),
+                else => logUnknownInstruct(instruction),
             },
             0x2 => opcodes.op_FX29(context, instruction),
             0x3 => opcodes.op_FX33(context, instruction),
             0x5 => opcodes.op_FX55(context, instruction),
             0x6 => opcodes.op_FX65(context, instruction),
-            else => log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction}),
+            else => logUnknownInstruct(instruction),
         },
-        else => log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction}),
+        else => logUnknownInstruct(instruction),
     }
+}
+
+/// Used to print a warning when an unknown instruction is encountered
+fn logUnknownInstruct(instruction: u16) void {
+    log.warn("{s}: ${X:0>4}", .{"Encountered unknown instruction", instruction});
 }
