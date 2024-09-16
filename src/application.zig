@@ -8,7 +8,7 @@ const sapp = sokol.app;
 const sglue = sokol.glue;
 
 const audio = @import("audio.zig");
-const emu = @import("emulator.zig");
+const emu = @import("chip8.zig");
 const log = @import("logger.zig");
 
 // Constants

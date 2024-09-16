@@ -1,7 +1,7 @@
 //! All opcode functions are stored here.
 
 const std = @import("std");
-const Chip8Context = @import("emulator.zig").Chip8Context;
+const Chip8Context = @import("chip8.zig").Chip8Context;
 const utils = @import("utils.zig");
 
 
