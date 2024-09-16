@@ -6,7 +6,7 @@ const std = @import("std");
 const clap = @import("clap");
 
 const Parameters = @import("application.zig").Parameters;
-const InterpreterType = @import("application.zig").InterpreterType;
+const InterpreterType = @import("chip8.zig").InterpreterType;
 const log = @import("logger.zig");
 
 /// Processes command-line arguments

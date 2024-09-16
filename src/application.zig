@@ -19,13 +19,9 @@ const SCREEN_HEIGHT = 32;
 const FPS = 60;
 const CYCLES_PER_FRAME = 500 / FPS;
 
-pub const InterpreterType = enum {
-    chip8,
-};
-
 pub const Parameters = struct {
-    cyclesPerSecond: usize       = 500,
-    machineType: InterpreterType = InterpreterType.chip8,
+    cyclesPerSecond: usize           = 500,
+    machineType: emu.InterpreterType = emu.InterpreterType.chip8,
 };
 
 // Global variables
