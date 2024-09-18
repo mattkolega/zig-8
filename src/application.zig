@@ -70,7 +70,7 @@ export fn init() void {
     rand = prng.random();
 
     // Keep running createContext until it either succeeds or file dialog is closed
-    while (emu.createContext(allocator)) |value| {
+    while (emu.createContext(interpreterParams.machineType, allocator)) |value| {
         chip8Context = value;
         break;
     } else |err| switch (err) {

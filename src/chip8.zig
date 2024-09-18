@@ -27,8 +27,8 @@ pub const Chip8Context = struct {
 };
 
 /// Creates a CHIP-8 context struct to store emulator state
-pub fn createContext(allocator: std.mem.Allocator) !Chip8Context {
-    var context: Chip8Context = std.mem.zeroInit(Chip8Context, .{});
+pub fn createContext(interpreter: InterpreterType, allocator: std.mem.Allocator) !Chip8Context {
+    var context: Chip8Context = std.mem.zeroInit(Chip8Context, .{ .type = interpreter });
     try loadRom(&context, allocator);
     loadFontData(&context);
 
