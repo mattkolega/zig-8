@@ -13,9 +13,9 @@ const log = @import("logger.zig");
 
 // Constants
 const WINDOW_TITLE = "ZIG-8";
-const SCREEN_SCALE_FACTOR = 20;
-const SCREEN_WIDTH = 64;
-const SCREEN_HEIGHT = 32;
+const SCREEN_SCALE_FACTOR = 10;
+const SCREEN_WIDTH = 128;
+const SCREEN_HEIGHT = 64;
 const FPS = 60;
 const CYCLES_PER_FRAME = 500 / FPS;
 
