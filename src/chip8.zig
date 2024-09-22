@@ -11,19 +11,26 @@ pub const InterpreterType = enum {
     schip,
 };
 
+pub const DisplayMode = enum {
+    lores,  // 64x32
+    hires,  // 128x64
+};
+
 pub const Chip8Context = struct {
-    type: InterpreterType,       // Variant which is being emulated
-    memory: [4096]u8,            // 4KB of RAM
-    display: [32][64]bool,       // Display is 64 pixels wide and 32 pixels high
+    type: InterpreterType,                 // Variant which is being emulated
+    memory: [4096]u8,                      // 4KB of RAM
+    display: [64][128]bool,                // Display is 64 pixels wide and 32 pixels high
+    res: DisplayMode = DisplayMode.lores,  // Dictates what resolution to render at. Doesn't change in CHIP-8 mode
     stack: [16]u16,
-    sp: u8,                      // Stack pointer - points to first available stack location
-    pc: u16 = 512,               // Program counter
-    index: u16,                  // Index register
+    sp: u8,                                // Stack pointer - points to first available stack location
+    pc: u16 = 512,                         // Program counter
+    index: u16,                            // Index register
     delayTimer: u8,
     soundTimer: u8,
-    v: [16]u8,                   // Variable registers
-    keyState: [16]bool,          // Tracks whether keys corresponding to hex chars are pressed or not
-    previousKeyState: [16]bool,  // Used to track key press and release for FX0A
+    v: [16]u8,                             // Variable registers
+    keyState: [16]bool,                    // Tracks whether keys corresponding to hex chars are pressed or not
+    previousKeyState: [16]bool,            // Used to track key press and release for FX0A
+    rplFlags: [8]u8,                       // RPL user flags found in HP-48. Not used in CHIP-8 mode
 };
 
 /// Creates a CHIP-8 context struct to store emulator state
