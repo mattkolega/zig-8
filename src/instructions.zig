@@ -18,7 +18,7 @@ pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
 
     var i: usize = 63;
     while (i >= 0) {
-        if (i + scrollAmount > 63) {
+        if (i  + scrollAmount > 63) {
             continue;
         } else if (i <= scrollAmount) {
             @memset(&context.display[i], false);
@@ -79,7 +79,8 @@ pub fn op_00FC(context: *Chip8Context, instruction: u16) void {
 
     var i: usize = 0;
     while (i < 128) {
-        if (i - scrollAmount < 0) {
+        const scrollDest = @subWithOverflow(i, scrollAmount);
+        if (scrollDest[1] == 1) {
             continue;
         } else if (i >= scrollAmount) {
             var j: usize = 0;
@@ -406,19 +407,31 @@ pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
 
     context.v[0xF] = 0;  // Set VF register to 0
 
+    var spriteAddress = context.index;
+
     for (0..16) |i| {
         const currentYCoord = yCoord + i;
         if (currentYCoord > 63) break;
+
+        const spriteByte = @as(u16, context.memory[spriteAddress]) << 8 | context.memory[spriteAddress + 1];
+        spriteAddress += 2;
+
+        var bitmask: u16 = 0b10000000_00000000;
+        var bitshiftAmount: isize = 15;
 
         for (0..16) |j| {
             const currentXCoord = xCoord + j;  // Increment xCoord for each column
             if (currentXCoord > 127) break;
 
-            if (context.display[currentYCoord][currentXCoord] == true) {  // Turn pixel off if currently on
+            const spriteBit: u16 = (spriteByte & bitmask) >> @intCast(bitshiftAmount);
+            bitmask >>= 1;
+            bitshiftAmount -= 1;
+
+            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Turn pixel off if currently on
+                context.display[currentYCoord][currentXCoord] = true;
+            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Turn pixel on if currently off
                 context.display[currentYCoord][currentXCoord] = false;
                 context.v[0xF] = 1;
-            } else if (context.display[currentYCoord][currentXCoord] == false) {  // Turn pixel on if currently off
-                context.display[currentYCoord][currentXCoord] = true;
             }
         }
     }
