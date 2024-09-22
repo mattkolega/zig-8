@@ -1,9 +1,33 @@
 //! All opcode functions are stored here.
 
 const std = @import("std");
+
 const Chip8Context = @import("chip8.zig").Chip8Context;
+const DisplayMode = @import("chip8.zig").DisplayMode;
+const InterpreterType = @import("chip8.zig").InterpreterType;
+const log = @import("logger.zig");
 const utils = @import("utils.zig");
 
+
+/// Scrolls screen down by N pixels
+/// Only used by: SCHIP
+pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const scrollAmount = utils.getSecondNibble(instruction);
+
+    var i: usize = 63;
+    while (i >= 0) {
+        if (i + scrollAmount > 63) {
+            continue;
+        } else if (i <= scrollAmount) {
+            @memset(context.display[i], false);
+        } else {
+            context.display[i+scrollAmount] = context.display[i];
+        }
+        i -= 1;
+    }
+}
 
 /// Clears the display
 pub fn op_00E0(context: *Chip8Context) void {
@@ -16,6 +40,94 @@ pub fn op_00E0(context: *Chip8Context) void {
 pub fn op_00EE(context: *Chip8Context) void {
     context.sp -= 1;
     context.pc = context.stack[context.sp];
+}
+
+/// Scrolls screen 4 pixels to the right
+/// Only used by: SCHIP
+pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const scrollAmount = 4;
+
+    var i: usize = 127;
+    while (i >= 0) {
+        if (i + scrollAmount > 127) {
+            continue;
+        } else if (i <= scrollAmount) {
+            var j: usize = 0;
+            while (j < 128) {
+                context.display[i][j] = false;
+            }
+            j += 1;
+        } else {
+            var j: usize = 0;
+            while (j < 128) {
+                context.display[i+scrollAmount][j] = context.display[i][j];
+            }
+            j += 1;
+        }
+        i -= 1;
+    }
+}
+
+/// Scrolls screen 4 pixels to the left
+/// Only used by: SCHIP
+pub fn op_00FC(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const scrollAmount = 4;
+
+    var i: usize = 0;
+    while (i < 128) {
+        if (i - scrollAmount < 0) {
+            continue;
+        } else if (i >= scrollAmount) {
+            var j: usize = 0;
+            while (j < 128) {
+                context.display[i][j] = false;
+            }
+            j += 1;
+        } else {
+            var j: usize = 0;
+            while (j < 128) {
+                context.display[i-scrollAmount][j] = context.display[i][j];
+            }
+            j += 1;
+        }
+        i += 1;
+    }
+}
+
+/// Exits interpreter
+/// Only used by: SCHIP
+pub fn op_00FD(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    std.process.exit(0);  // TODO: should exit from the interpreter more elegantly
+}
+
+/// Switches display to low-res mode (64x32)
+/// Only used by: SCHIP
+pub fn op_00FE(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    context.res = DisplayMode.lores;
+}
+
+/// Switches display to hi-res mode (128x64)
+/// Only used by: SCHIP
+pub fn op_00FF(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    context.res = DisplayMode.hires;
+}
+
+/// Jumps to native subroutine at address NNN
+/// Only used by: CHIP-8
+pub fn op_0NNN(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can only run in CHIP-8 mode");
+
+    return;
 }
 
 /// Sets program counter to address NNN
@@ -201,9 +313,22 @@ pub fn op_ANNN(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Jumps to address NNN plus value in V0
+/// Only used by: CHIP-8
 pub fn op_BNNN(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can only run in CHIP-8 mode");
+
     const address = utils.getLastThreeNibbles(instruction);
     context.pc = address + context.v[0];
+}
+
+/// Jumps to address XNN plus value in VX
+/// Only used by: SCHIP
+pub fn op_BXNN(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+    const address = utils.getLastThreeNibbles(instruction);
+    context.pc = address + context.v[xRegisterIndex];
 }
 
 /// Generates random number
@@ -222,32 +347,78 @@ pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
-    const xCoord = context.v[xRegisterIndex] % 64;  // Make starting xCoord wrap around
-    const yCoord = context.v[yRegisterIndex] % 32;  // Make starting yCoord wrap around
+    // Multiply sprite by 2 if in lores mode
+    // This is to scale 64x32 up to 128x64
+    const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
 
-    const spriteRows = utils.getFourthNibble(instruction);  // Get number of rows to draw for sprite
+    const xCoord = (context.v[xRegisterIndex] * multiplicationFactor) % 128;  // Make starting xCoord wrap around
+    const yCoord = (context.v[yRegisterIndex] * multiplicationFactor) % 64;  // Make starting yCoord wrap around
+
+    const spriteRows = utils.getFourthNibble(instruction) * multiplicationFactor;  // Get number of rows to draw for sprite
 
     context.v[0xF] = 0;  // Set VF register to 0
 
-    for (0..spriteRows) |n| {
-        const currentYCoord = yCoord + n;  // Increment yCoord for each row
-        if (currentYCoord > 31) break;
-        const spriteByte = context.memory[context.index + n];
-        var bitmask: u8 = 0b10000000;
-        var bitshiftAmount: usize = 7;
+    var spriteByteIndex: usize = 0;
 
-        for (0..8) |i| {
-            const currentXCoord = xCoord + i;  // Increment xCoord for each column
-            if (currentXCoord > 63) break;
-            const spriteBit: u8 = (spriteByte & bitmask) >> @intCast(bitshiftAmount);
+    var i: usize = 0;
+    while (i < spriteRows) {
+        const currentYCoord = yCoord + i;  // Increment yCoord for each row
+        if (currentYCoord > 63) break;
+
+        const spriteByte = context.memory[context.index + spriteByteIndex];
+        spriteByteIndex += 1;
+        const spriteRow = utils.byteToDoubleByte(spriteByte);
+
+        // Used to get each bit in the u16
+        var bitmask: u16 = 0b10000000_00000000;
+        var bitshiftAmount: isize = 15;
+
+        for (0..16) |j| {
+            const currentXCoord = xCoord + j;  // Increment xCoord for each column
+            if (currentXCoord > 127) break;
+            const spriteBit: u16 = (spriteRow & bitmask) >> @intCast(bitshiftAmount);
             bitmask >>= 1;
-            if (bitshiftAmount >= 1) bitshiftAmount -= 1;  // Avoid overflow by only decrementing when 1 or above
+            bitshiftAmount -= 1;
 
             if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
                 context.display[currentYCoord][currentXCoord] = true;
+                if (context.res == DisplayMode.lores) context.display[currentYCoord+1][currentXCoord] = true;  // Turn pixel on in next row if lores mode
             } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
                 context.display[currentYCoord][currentXCoord] = false;
+                if (context.res == DisplayMode.lores) context.display[currentYCoord+1][currentXCoord] = false;  // Turn off pixel in next row if lores mode
                 context.v[0xF] = 1;
+            }
+        }
+        if (context.res == DisplayMode.lores) i += 2 else i += 1;
+    }
+}
+
+/// Draws 16x16 sprite to display
+/// Only used by: SCHIP
+pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+    const yRegisterIndex = utils.getThirdNibble(instruction);
+
+    const xCoord = context.v[xRegisterIndex] % 128;  // Make starting xCoord wrap around
+    const yCoord = context.v[yRegisterIndex] % 64;  // Make starting yCoord wrap around
+
+    context.v[0xF] = 0;  // Set VF register to 0
+
+    for (0..16) |i| {
+        const currentYCoord = yCoord + i;
+        if (currentYCoord > 63) break;
+
+        for (0..16) |j| {
+            const currentXCoord = xCoord + j;  // Increment xCoord for each column
+            if (currentXCoord > 127) break;
+
+            if (context.display[currentYCoord][currentXCoord] == true) {  // Turn pixel off if currently on
+                context.display[currentYCoord][currentXCoord] = false;
+                context.v[0xF] = 1;
+            } else if (context.display[currentYCoord][currentXCoord] == false) {  // Turn pixel on if currently off
+                context.display[currentYCoord][currentXCoord] = true;
             }
         }
     }
@@ -320,10 +491,19 @@ pub fn op_FX1E(context: *Chip8Context, instruction: u16) void {
     context.index += context.v[xRegisterIndex];
 }
 
-/// Sets index register to address corresponding to a hexadecimal character
+/// Sets index register to address corresponding to a small hexadecimal character
 pub fn op_FX29(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     context.index = 0x50 + (context.v[xRegisterIndex] * 5);  // Font data begins at memory address 0x50
+}
+
+/// Sets index register to address corresponding to a large hexadecimal character
+/// Only used by: SCHIP
+pub fn op_FX30(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+    context.index = 0xA0 + (context.v[xRegisterIndex] * 10);  // Large font data begins at memory address 0xA0
 }
 
 /// Converts VX value to binary-coded decimal and store result at address I, I+1, I+2
@@ -360,4 +540,49 @@ pub fn op_FX65(context: *Chip8Context, instruction: u16) void {
         context.v[i] = context.memory[context.index + i];
     }
     context.index += xRegisterIndex + 1;
+}
+
+/// Stores contents of V0 to VX into rplFlags (X <= 7)
+/// Only used for: SCHIP
+pub fn op_FX75(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+
+    if (xRegisterIndex > 7) {
+        logErrInInstruct(instruction, "Second nibble must be <= 7");
+        return;
+    }
+
+    for (0..xRegisterIndex+1) |i| {
+        context.rplFlags[i] = context.v[i];
+    }
+}
+
+/// Loads contents of rplFlags into V0 to VX (X <= 7)
+/// Only used for: SCHIP
+pub fn op_FX85(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+
+    if (xRegisterIndex > 7) {
+        logErrInInstruct(instruction, "Second nibble must be <= 7");
+        return;
+    }
+
+    for (0..xRegisterIndex+1) |i| {
+        context.v[i] = context.rplFlags[i];
+    }
+}
+
+/// Logs an error which is encountered during instruction execution
+fn logErrInInstruct(instruction: u16, errMessage: []u8) void {
+    log.err("{s}: ${X:0>4} - {s}", .{"Error in instruction", instruction, errMessage});
+}
+
+/// Prints a warning when an unexpected instruction is encountered
+/// i.e. SCHIP instruction is encountered when running in CHIP-8 mode
+fn logUnexpectedInstruct(instruction: u16, errMessage: []u8) void {
+    log.err("{s}: ${X:0>4} - {s}", .{"Unexpected instruction", instruction, errMessage});
 }
