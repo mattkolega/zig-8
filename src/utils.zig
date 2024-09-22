@@ -1,3 +1,19 @@
+//! Helper functions to cut down on repeated code
+
+/// Doubles each bit in a byte e.g. 10101010 to 1100110011001100
+pub fn byteToDoubleByte(byte: u8) u16 {
+    var doubleByte: u16 = 0;
+
+    var bitshiftAmount: isize = 7;
+    while (bitshiftAmount >= 0) {
+        const bit: u16 = (byte >> @intCast(bitshiftAmount)) & 1;
+        doubleByte |= (bit*3) << @intCast(bitshiftAmount*2);
+        bitshiftAmount -= 1;  // Avoid underflow
+    }
+
+    return doubleByte;
+}
+
 // Instruction Decode Helpers
 // A 'nibble' is a half-byte (4 bits) component of an instruction
 
@@ -36,6 +52,10 @@ pub fn getLastThreeNibbles(instruction: u16) u16 {
 //
 
 const expectEqual = @import("std").testing.expectEqual;
+
+test "byteToDoubleByte" {
+    try expectEqual(0b11001100_11001100, byteToDoubleByte(0b10101010));
+}
 
 test "getFirstNibble" {
     try expectEqual(0x1, getFirstNibble(0x1234));
