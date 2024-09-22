@@ -21,7 +21,7 @@ pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
         if (i + scrollAmount > 63) {
             continue;
         } else if (i <= scrollAmount) {
-            @memset(context.display[i], false);
+            @memset(&context.display[i], false);
         } else {
             context.display[i+scrollAmount] = context.display[i];
         }
@@ -577,12 +577,12 @@ pub fn op_FX85(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Logs an error which is encountered during instruction execution
-fn logErrInInstruct(instruction: u16, errMessage: []u8) void {
+fn logErrInInstruct(instruction: u16, errMessage: []const u8) void {
     log.err("{s}: ${X:0>4} - {s}", .{"Error in instruction", instruction, errMessage});
 }
 
 /// Prints a warning when an unexpected instruction is encountered
 /// i.e. SCHIP instruction is encountered when running in CHIP-8 mode
-fn logUnexpectedInstruct(instruction: u16, errMessage: []u8) void {
+fn logUnexpectedInstruct(instruction: u16, errMessage: []const u8) void {
     log.err("{s}: ${X:0>4} - {s}", .{"Unexpected instruction", instruction, errMessage});
 }
