@@ -18,9 +18,9 @@ pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
 
     for (0..64) |i| {
         const index = 63 - i;  // Work backwards
-        if (index + scrollAmount > 63) {
+        if ((index + scrollAmount) > 63) {
             continue;
-        } else if (index <= scrollAmount) {
+        } else if (index < scrollAmount) {
             for (0..128) |j| {
                 @memset(&context.display[index], false);
                 _ = j;  // Discard capture
@@ -56,9 +56,9 @@ pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
 
     for (0..128) |i| {
         const index = 127 - i;  // Work backwards
-        if (index + scrollAmount > 127) {
+        if ((index + scrollAmount) > 127) {
             continue;
-        } else if (index <= scrollAmount) {
+        } else if (index < scrollAmount) {
             for (0..64) |j| {
                 context.display[j][index] = false;
             }
@@ -81,7 +81,7 @@ pub fn op_00FC(context: *Chip8Context, instruction: u16) void {
         const scrollDest = @subWithOverflow(i, scrollAmount);
         if (scrollDest[1] == 1) {  // Check for overflow
             continue;
-        } else if (i >= 127 - scrollAmount) {
+        } else if (i > (127 - scrollAmount)) {
             for (0..64) |j| {
                 context.display[j][i] = false;
             }
@@ -339,12 +339,22 @@ pub fn op_CXNN(context: *Chip8Context, instruction: u16, rand: std.Random) void 
 
 /// Draws n-width sprite to display
 pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
+    if (context.res == DisplayMode.lores) {
+        drawLowRes(context, instruction);
+    } else {
+        drawHighRes(context, instruction);
+    }
+}
+
+/// Draw to screen during low-resolution (64x32) mode
+/// To be used by op_DXYN
+fn drawLowRes (context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
-    // Multiply sprite by 2 if in lores mode
+    // Multiply sprite by 2 in lores mode
     // This is to scale 64x32 up to 128x64
-    const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
+    const multiplicationFactor: usize = 2;
 
     const xCoord = (context.v[xRegisterIndex] * multiplicationFactor) % 128;  // Make starting xCoord wrap around
     const yCoord = (context.v[yRegisterIndex] * multiplicationFactor) % 64;  // Make starting yCoord wrap around
@@ -353,16 +363,16 @@ pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
 
     context.v[0xF] = 0;  // Set VF register to 0
 
-    var spriteByteIndex: usize = 0;
+    var spriteAddress = context.index;
 
     var i: usize = 0;
-    while (i < spriteRows) {
+    while (i < spriteRows) : (i += 2) {
         const currentYCoord = yCoord + i;  // Increment yCoord for each row
         if (currentYCoord > 63) break;
 
-        const spriteByte = context.memory[context.index + spriteByteIndex];
-        spriteByteIndex += 1;
-        const spriteRow = utils.byteToDoubleByte(spriteByte);
+        const spriteByte = context.memory[spriteAddress];
+        spriteAddress += 1;
+        const spriteRow: u16 = utils.byteToDoubleByte(spriteByte);
 
         // Used to get each bit in the u16
         var bitmask: u16 = 0b10000000_00000000;
@@ -377,14 +387,63 @@ pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
 
             if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
                 context.display[currentYCoord][currentXCoord] = true;
-                if (context.res == DisplayMode.lores) context.display[currentYCoord+1][currentXCoord] = true;  // Turn pixel on in next row if lores mode
+                context.display[currentYCoord+1][currentXCoord] = true;
             } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
                 context.display[currentYCoord][currentXCoord] = false;
-                if (context.res == DisplayMode.lores) context.display[currentYCoord+1][currentXCoord] = false;  // Turn off pixel in next row if lores mode
+                context.display[currentYCoord+1][currentXCoord] = false;  // Turn off pixel in next row if lores mode
                 context.v[0xF] = 1;
             }
         }
-        if (context.res == DisplayMode.lores) i += 2 else i += 1;
+    }
+}
+
+/// Draw to screen during high-resolution (128x64) mode
+/// To be used by op_DXYN
+fn drawHighRes (context: *Chip8Context, instruction: u16) void {
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+    const yRegisterIndex = utils.getThirdNibble(instruction);
+
+    const xCoord = context.v[xRegisterIndex] % 128;  // Make starting xCoord wrap around
+    const yCoord = context.v[yRegisterIndex] % 64;  // Make starting yCoord wrap around
+
+    const spriteRows = utils.getFourthNibble(instruction);  // Get number of rows to draw for sprite
+
+    context.v[0xF] = 0;  // Set VF register to 0
+
+    var spriteAddress = context.index;
+
+    for (0..spriteRows) |i| {
+        const currentYCoord = yCoord + i;  // Increment yCoord for each row
+        if (currentYCoord > 63) {
+            context.v[0xF] += @intCast(spriteRows - i);  // Add number of clipped off rows to VF
+            break;
+        }
+
+        const spriteByte = context.memory[spriteAddress];
+        spriteAddress += 1;
+
+        // Used to get each bit in the u8
+        var bitmask: u8 = 0b10000000;
+        var bitshiftAmount: isize = 7;
+
+        var collisionOccurred = false;
+
+        for (0..8) |j| {
+            const currentXCoord = xCoord + j;  // Increment xCoord for each column
+            if (currentXCoord > 127) break;
+            const spriteBit: u8 = (spriteByte & bitmask) >> @intCast(bitshiftAmount);
+            bitmask >>= 1;
+            bitshiftAmount -= 1;
+
+            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
+                context.display[currentYCoord][currentXCoord] = true;
+            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
+                context.display[currentYCoord][currentXCoord] = false;
+                collisionOccurred = true;
+            }
+        }
+
+        if (collisionOccurred) context.v[0xF] += 1;
     }
 }
 
