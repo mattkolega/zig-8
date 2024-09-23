@@ -7,8 +7,8 @@ const log = @import("logger.zig");
 const utils = @import("utils.zig");
 
 pub const InterpreterType = enum {
-    chip8,
-    schip,
+    chip8,  // CHIP-8
+    schip,  // SUPER-CHIP 1.1
 };
 
 pub const DisplayMode = enum {
@@ -19,7 +19,7 @@ pub const DisplayMode = enum {
 pub const Chip8Context = struct {
     type: InterpreterType,                 // Variant which is being emulated
     memory: [4096]u8,                      // 4KB of RAM
-    display: [64][128]bool,                // Display is 64 pixels wide and 32 pixels high
+    display: [64][128]bool,                // Display is 128 pixels wide and 64 pixels high
     res: DisplayMode = DisplayMode.lores,  // Dictates what resolution to render at. Doesn't change in CHIP-8 mode
     stack: [16]u16,
     sp: u8,                                // Stack pointer - points to first available stack location
