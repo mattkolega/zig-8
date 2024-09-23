@@ -18,7 +18,7 @@ pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
 
     for (0..64) |i| {
         const index = 63 - i;  // Work backwards
-        if (index + scrollAmount > 63) {  // Check for overflow
+        if (index + scrollAmount > 63) {
             continue;
         } else if (index <= scrollAmount) {
             for (0..128) |j| {
@@ -56,7 +56,7 @@ pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
 
     for (0..128) |i| {
         const index = 127 - i;  // Work backwards
-        if (index + scrollAmount > 127) {  // Check for overflow
+        if (index + scrollAmount > 127) {
             continue;
         } else if (index <= scrollAmount) {
             for (0..64) |j| {
@@ -199,7 +199,7 @@ pub fn op_8XY1(context: *Chip8Context, instruction: u16) void {
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
     context.v[xRegisterIndex] |= context.v[yRegisterIndex];
-    context.v[0xF] = 0;
+    if (context.type == InterpreterType.chip8) context.v[0xF] = 0;  // COSMAC CHIP-8 will reset VF
 }
 
 /// Sets VX to result of binary AND of VX and VY
@@ -208,7 +208,7 @@ pub fn op_8XY2(context: *Chip8Context, instruction: u16) void {
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
     context.v[xRegisterIndex] &= context.v[yRegisterIndex];
-    context.v[0xF] = 0;
+    if (context.type == InterpreterType.chip8) context.v[0xF] = 0;  // COSMAC CHIP-8 will reset VF
 }
 
 /// Sets VX to result of binary XOR of VX and VY
@@ -217,7 +217,7 @@ pub fn op_8XY3(context: *Chip8Context, instruction: u16) void {
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
     context.v[xRegisterIndex] ^= context.v[yRegisterIndex];
-    context.v[0xF] = 0;
+    if (context.type == InterpreterType.chip8) context.v[0xF] = 0;  // COSMAC CHIP-8 will reset VF
 }
 
 /// Sets VX to sum of VX and VY
@@ -257,7 +257,7 @@ pub fn op_8XY6(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
-    context.v[xRegisterIndex] = context.v[yRegisterIndex];
+    if (context.type != InterpreterType.schip) context.v[xRegisterIndex] = context.v[yRegisterIndex];  // SCHIP won't set VX to VY
     const vF = (context.v[xRegisterIndex] & 0b00000001);  // Set VF to value of bit to be shifted
     context.v[xRegisterIndex] >>= 1;
     context.v[0xF] = vF;
@@ -285,7 +285,7 @@ pub fn op_8XYE(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
-    context.v[xRegisterIndex] = context.v[yRegisterIndex];
+    if (context.type != InterpreterType.schip) context.v[xRegisterIndex] = context.v[yRegisterIndex];  // SCHIP won't set VX to VY
     const vF = (context.v[xRegisterIndex] & 0b10000000) >> 7;  // Set VF to value of bit to be shifted
     context.v[xRegisterIndex] <<= 1;
     context.v[0xF] = vF;
@@ -536,7 +536,7 @@ pub fn op_FX55(context: *Chip8Context, instruction: u16) void {
     for (0..xRegisterIndex+1) |i| {
         context.memory[context.index + i] = context.v[i];
     }
-    context.index += xRegisterIndex + 1;
+    if (context.type != InterpreterType.schip) context.index += xRegisterIndex + 1;  // SCHIP won't increment index register
 }
 
 /// Loads registers from memory
@@ -546,7 +546,7 @@ pub fn op_FX65(context: *Chip8Context, instruction: u16) void {
     for (0..xRegisterIndex+1) |i| {
         context.v[i] = context.memory[context.index + i];
     }
-    context.index += xRegisterIndex + 1;
+    if (context.type != InterpreterType.schip) context.index += xRegisterIndex + 1;  // SCHIP won't increment index register
 }
 
 /// Stores contents of V0 to VX into rplFlags (X <= 7)
