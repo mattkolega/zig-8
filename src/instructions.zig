@@ -14,18 +14,23 @@ const utils = @import("utils.zig");
 pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
     if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
 
-    const scrollAmount = utils.getSecondNibble(instruction);
+    const scrollAmount = utils.getFourthNibble(instruction);
 
-    var i: usize = 63;
-    while (i >= 0) {
-        if (i  + scrollAmount > 63) {
+    for (0..64) |i| {
+        const index = 63 - i;  // Work backwards
+        if (index + scrollAmount > 63) {  // Check for overflow
             continue;
-        } else if (i <= scrollAmount) {
-            @memset(&context.display[i], false);
+        } else if (index <= scrollAmount) {
+            for (0..128) |j| {
+                @memset(&context.display[index], false);
+                _ = j;  // Discard capture
+            }
         } else {
-            context.display[i+scrollAmount] = context.display[i];
+            for (0..128) |j| {
+                context.display[index+scrollAmount] = context.display[index];
+                _ = j;  // Discard capture
+            }
         }
-        i -= 1;
     }
 }
 
@@ -49,24 +54,19 @@ pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
 
     const scrollAmount = 4;
 
-    var i: usize = 127;
-    while (i >= 0) {
-        if (i + scrollAmount > 127) {
+    for (0..128) |i| {
+        const index = 127 - i;  // Work backwards
+        if (index + scrollAmount > 127) {  // Check for overflow
             continue;
-        } else if (i <= scrollAmount) {
-            var j: usize = 0;
-            while (j < 128) {
-                context.display[i][j] = false;
+        } else if (index <= scrollAmount) {
+            for (0..64) |j| {
+                context.display[j][index] = false;
             }
-            j += 1;
         } else {
-            var j: usize = 0;
-            while (j < 128) {
-                context.display[i+scrollAmount][j] = context.display[i][j];
+            for (0..64) |j| {
+                context.display[j][index+scrollAmount] = context.display[j][index];
             }
-            j += 1;
         }
-        i -= 1;
     }
 }
 
@@ -77,25 +77,19 @@ pub fn op_00FC(context: *Chip8Context, instruction: u16) void {
 
     const scrollAmount = 4;
 
-    var i: usize = 0;
-    while (i < 128) {
+    for (0..128) |i| {
         const scrollDest = @subWithOverflow(i, scrollAmount);
-        if (scrollDest[1] == 1) {
+        if (scrollDest[1] == 1) {  // Check for overflow
             continue;
-        } else if (i >= scrollAmount) {
-            var j: usize = 0;
-            while (j < 128) {
-                context.display[i][j] = false;
+        } else if (i >= 127 - scrollAmount) {
+            for (0..64) |j| {
+                context.display[j][i] = false;
             }
-            j += 1;
         } else {
-            var j: usize = 0;
-            while (j < 128) {
-                context.display[i-scrollAmount][j] = context.display[i][j];
+            for (0..64) |j| {
+                context.display[j][i-scrollAmount] = context.display[j][i];
             }
-            j += 1;
         }
-        i += 1;
     }
 }
 
