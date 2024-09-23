@@ -405,13 +405,18 @@ pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
 
     for (0..16) |i| {
         const currentYCoord = yCoord + i;
-        if (currentYCoord > 63) break;
+        if (currentYCoord > 63) {
+            context.v[0xF] += (16 - @as(u8, @truncate(i)));  // Add number of rows which are clipped off to VF
+            break;
+        }
 
         const spriteByte = @as(u16, context.memory[spriteAddress]) << 8 | context.memory[spriteAddress + 1];
         spriteAddress += 2;
 
         var bitmask: u16 = 0b10000000_00000000;
         var bitshiftAmount: isize = 15;
+
+        var collisionOccurred = false;
 
         for (0..16) |j| {
             const currentXCoord = xCoord + j;  // Increment xCoord for each column
@@ -421,13 +426,15 @@ pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
             bitmask >>= 1;
             bitshiftAmount -= 1;
 
-            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Turn pixel off if currently on
+            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
                 context.display[currentYCoord][currentXCoord] = true;
-            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Turn pixel on if currently off
+            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
                 context.display[currentYCoord][currentXCoord] = false;
-                context.v[0xF] = 1;
+                collisionOccurred = true;
             }
         }
+
+        if (collisionOccurred) context.v[0xF] += 1;
     }
 }
 
