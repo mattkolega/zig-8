@@ -42,7 +42,7 @@ Command line arguments can optionally be given to the interpreter to alter its e
 ```
 
 ### Controls
-Original CHIP-8 computers supported hexadecimal keypads for input. This emulator maps those keys to the left side of a QWERTY keyboard.
+Original CHIP-8 computers supported hexadecimal keypads for input. This interpreter maps those keys to the left side of a QWERTY keyboard.
 The keys needed to be pressed during execution depend on the ROM file.
 
 ```
