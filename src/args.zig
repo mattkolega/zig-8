@@ -15,7 +15,7 @@ pub fn processArgs(allocator: std.mem.Allocator) !Parameters {
         \\-h, --help            Display this help message and exit.
         \\-c, --cycles <usize>  Set the number of cycles per second for the interpreter.
         \\-m, --machine <str>   Set the interpreter type.
-        \\                      Possible values: chip8
+        \\                      Possible values: chip8 | schip
     );
 
     // Setup parser
