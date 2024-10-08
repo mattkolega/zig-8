@@ -82,6 +82,11 @@ export fn init() void {
         else => {},
     }
 
+    switch (chip8Context.type) {
+        emu.InterpreterType.chip8 => log.info("{s}", .{"Started in CHIP-8 mode"}),
+        emu.InterpreterType.schip => log.info("{s}", .{"Started in SCHIP mode"})
+    }
+
     // Setup image
     framebufferImage = sgfx.makeImage(.{
         .width = SCREEN_WIDTH,
