@@ -25,7 +25,7 @@ zig build run
 ## Usage
 Either run `zig build run` at the root directory, or navigate to the output directory (default is *zig-out*) and run `./zig-8`.
 
-Launching the emulator will open a file dialog to load `.ch8` ROM files.
+Launching the interpreter will open a file dialog to load `.ch8` ROM files.
 
 ### Program Arguments
 Command line arguments can optionally be given to the interpreter to alter its execution.
@@ -57,7 +57,7 @@ A 0 B F      Z X C V
 - [Timendus](https://github.com/Timendus/chip8-test-suite) for his test ROM collection, which greatly helped with getting all the opcodes working properly.
 - [Gulrak's CHIP-8 Variant Opcode Table](https://chip8.gulrak.net/) for aiding with identifying quirks associated with different CHIP-8 implementations.
 - [CHIP-8 Extensions](https://chip-8.github.io/extensions/) for providing valuable insight into the different CHIP-8 extension variations.
-- John Earnest's [Octo](https://johnearnest.github.io/Octo/) IDE for serving as a reference which I compared my interpreter's behaviour to.
+- John Earnest's [Octo](https://johnearnest.github.io/Octo/) IDE for serving as a reference which I could compare my interpreter's behaviour to.
 
 ## Licence
 [MIT](LICENSE)
