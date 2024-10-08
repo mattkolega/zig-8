@@ -14,22 +14,17 @@ const utils = @import("utils.zig");
 pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
     if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
 
-    const scrollAmount = utils.getFourthNibble(instruction);
+    // Scroll by 2n if lores mode
+    const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
+    const scrollAmount = utils.getFourthNibble(instruction) * multiplicationFactor;
 
     for (0..64) |i| {
         const index = 63 - i;  // Work backwards
         if ((index + scrollAmount) > 63) {
             continue;
-        } else if (index < scrollAmount) {
-            for (0..128) |j| {
-                @memset(&context.display[index], false);
-                _ = j;  // Discard capture
-            }
         } else {
-            for (0..128) |j| {
-                context.display[index+scrollAmount] = context.display[index];
-                _ = j;  // Discard capture
-            }
+            context.display[index+scrollAmount] = context.display[index];
+            if (index < scrollAmount) @memset(&context.display[index], false);  // Clear pixel row
         }
     }
 }
@@ -52,19 +47,18 @@ pub fn op_00EE(context: *Chip8Context) void {
 pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
     if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
 
-    const scrollAmount = 4;
+    // Scroll by 8 pixels if lores mode
+    const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
+    const scrollAmount = 4 * multiplicationFactor;
 
     for (0..128) |i| {
         const index = 127 - i;  // Work backwards
         if ((index + scrollAmount) > 127) {
             continue;
-        } else if (index < scrollAmount) {
-            for (0..64) |j| {
-                context.display[j][index] = false;
-            }
         } else {
             for (0..64) |j| {
                 context.display[j][index+scrollAmount] = context.display[j][index];
+                if (index < scrollAmount) context.display[j][index] = false;
             }
         }
     }
@@ -75,19 +69,18 @@ pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
 pub fn op_00FC(context: *Chip8Context, instruction: u16) void {
     if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
 
-    const scrollAmount = 4;
+    // Scroll by 8 pixels if lores mode
+    const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
+    const scrollAmount = 4 * multiplicationFactor;
 
     for (0..128) |i| {
         const scrollDest = @subWithOverflow(i, scrollAmount);
         if (scrollDest[1] == 1) {  // Check for overflow
             continue;
-        } else if (i > (127 - scrollAmount)) {
-            for (0..64) |j| {
-                context.display[j][i] = false;
-            }
         } else {
             for (0..64) |j| {
                 context.display[j][i-scrollAmount] = context.display[j][i];
+                if (i > (127 - scrollAmount)) context.display[j][i] = false;
             }
         }
     }
@@ -379,7 +372,7 @@ fn drawLowRes (context: *Chip8Context, instruction: u16) void {
         var bitshiftAmount: isize = 15;
 
         for (0..16) |j| {
-            const currentXCoord = xCoord + j;  // Increment xCoord for each column
+            const currentXCoord = (xCoord + j);  // Increment xCoord for each column
             if (currentXCoord > 127) break;
             const spriteBit: u16 = (spriteRow & bitmask) >> @intCast(bitshiftAmount);
             bitmask >>= 1;
@@ -410,23 +403,17 @@ fn drawHighRes (context: *Chip8Context, instruction: u16) void {
 
     context.v[0xF] = 0;  // Set VF register to 0
 
-    var spriteAddress = context.index;
+    const spriteAddress = context.index;
 
     for (0..spriteRows) |i| {
         const currentYCoord = yCoord + i;  // Increment yCoord for each row
-        if (currentYCoord > 63) {
-            context.v[0xF] += @intCast(spriteRows - i);  // Add number of clipped off rows to VF
-            break;
-        }
+        if (currentYCoord > 63) break;
 
-        const spriteByte = context.memory[spriteAddress];
-        spriteAddress += 1;
+        const spriteByte = context.memory[spriteAddress + i];
 
         // Used to get each bit in the u8
         var bitmask: u8 = 0b10000000;
         var bitshiftAmount: isize = 7;
-
-        var collisionOccurred = false;
 
         for (0..8) |j| {
             const currentXCoord = xCoord + j;  // Increment xCoord for each column
@@ -435,15 +422,15 @@ fn drawHighRes (context: *Chip8Context, instruction: u16) void {
             bitmask >>= 1;
             bitshiftAmount -= 1;
 
-            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
-                context.display[currentYCoord][currentXCoord] = true;
-            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
-                context.display[currentYCoord][currentXCoord] = false;
-                collisionOccurred = true;
+            if (spriteBit == 1) {
+                if (context.display[currentYCoord][currentXCoord]) {
+                    context.display[currentYCoord][currentXCoord] = false;
+                    context.v[0xF] = 1;
+                } else {
+                    context.display[currentYCoord][currentXCoord] = true;
+                }
             }
         }
-
-        if (collisionOccurred) context.v[0xF] += 1;
     }
 }
 
@@ -464,18 +451,13 @@ pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
 
     for (0..16) |i| {
         const currentYCoord = yCoord + i;
-        if (currentYCoord > 63) {
-            context.v[0xF] += (16 - @as(u8, @truncate(i)));  // Add number of rows which are clipped off to VF
-            break;
-        }
+        if (currentYCoord > 63) break;
 
         const spriteByte = @as(u16, context.memory[spriteAddress]) << 8 | context.memory[spriteAddress + 1];
         spriteAddress += 2;
 
         var bitmask: u16 = 0b10000000_00000000;
         var bitshiftAmount: isize = 15;
-
-        var collisionOccurred = false;
 
         for (0..16) |j| {
             const currentXCoord = xCoord + j;  // Increment xCoord for each column
@@ -485,15 +467,15 @@ pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
             bitmask >>= 1;
             bitshiftAmount -= 1;
 
-            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
-                context.display[currentYCoord][currentXCoord] = true;
-            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
-                context.display[currentYCoord][currentXCoord] = false;
-                collisionOccurred = true;
+            if (spriteBit == 1) {
+                if (context.display[currentYCoord][currentXCoord]) {
+                    context.display[currentYCoord][currentXCoord] = false;
+                    context.v[0xF] = 1;
+                } else {
+                    context.display[currentYCoord][currentXCoord] = true;
+                }
             }
         }
-
-        if (collisionOccurred) context.v[0xF] += 1;
     }
 }
 
