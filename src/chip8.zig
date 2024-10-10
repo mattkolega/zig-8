@@ -7,8 +7,9 @@ const log = @import("logger.zig");
 const utils = @import("utils.zig");
 
 pub const InterpreterType = enum {
-    chip8,  // CHIP-8
-    schip,  // SUPER-CHIP 1.1
+    chip8,   // CHIP-8
+    schip,   // SUPER-CHIP 1.1
+    xochip,  // XO-CHIP
 };
 
 pub const DisplayMode = enum {
@@ -30,7 +31,7 @@ pub const Chip8Context = struct {
     v: [16]u8,                             // Variable registers
     keyState: [16]bool,                    // Tracks whether keys corresponding to hex chars are pressed or not
     previousKeyState: [16]bool,            // Used to track key press and release for FX0A
-    rplFlags: [8]u8,                       // RPL user flags found in HP-48. Not used in CHIP-8 mode
+    rplFlags: [16]u8,                       // RPL user flags found in HP-48. Not used in CHIP-8 mode
 };
 
 /// Creates a CHIP-8 context struct to store emulator state

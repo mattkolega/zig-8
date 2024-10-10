@@ -84,7 +84,8 @@ export fn init() void {
 
     switch (chip8Context.type) {
         emu.InterpreterType.chip8 => log.info("{s}", .{"Started in CHIP-8 mode"}),
-        emu.InterpreterType.schip => log.info("{s}", .{"Started in SCHIP mode"})
+        emu.InterpreterType.schip => log.info("{s}", .{"Started in SCHIP mode"}),
+        emu.InterpreterType.xochip => log.info("{s}", .{"Started in XO-CHIP mode"}),
     }
 
     // Setup image
