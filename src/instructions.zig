@@ -468,12 +468,12 @@ pub fn op_FX65(context: *Chip8Context, instruction: u16) void {
 /// Stores contents of V0 to VX into rplFlags (X <= 7)
 /// Only used for: SCHIP
 pub fn op_FX75(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
     const xRegisterIndex = utils.getSecondNibble(instruction);
 
-    if (xRegisterIndex > 7) {
-        logErrInInstruct(instruction, "Second nibble must be <= 7");
+    if (xRegisterIndex > 7 and context.type == InterpreterType.schip) {
+        logErrInInstruct(instruction, "Second nibble must be <= 7 in SCHIP mode");
         return;
     }
 
@@ -485,12 +485,12 @@ pub fn op_FX75(context: *Chip8Context, instruction: u16) void {
 /// Loads contents of rplFlags into V0 to VX (X <= 7)
 /// Only used for: SCHIP
 pub fn op_FX85(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
     const xRegisterIndex = utils.getSecondNibble(instruction);
 
-    if (xRegisterIndex > 7) {
-        logErrInInstruct(instruction, "Second nibble must be <= 7");
+    if (xRegisterIndex > 7 and context.type == InterpreterType.schip) {
+        logErrInInstruct(instruction, "Second nibble must be <= 7 in SCHIP mode");
         return;
     }
 
