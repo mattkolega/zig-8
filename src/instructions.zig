@@ -32,6 +32,28 @@ pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
     }
 }
 
+/// Scrolls screen up by N pixels
+/// Only used by: XO-CHIP
+pub fn op_00DN(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.xochip) logUnexpectedInstruct(instruction, "Can only run in XO-CHIP mode");
+
+    // Scroll by 2n if lores mode
+    const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
+    const scrollAmount = utils.getFourthNibble(instruction) * multiplicationFactor;
+
+    for (0..64) |i| {
+        const scrollDest = @subWithOverflow(i, scrollAmount);
+        if (scrollDest[1] == 1) {  // Check for overflow
+            continue;
+        } else {
+            for (0..128) |j| {
+                context.display[i-scrollAmount][j] = (context.display[i][j] & context.currentBitPlane);
+                if (i > (63 - scrollAmount)) context.display[i][j] &= ~context.currentBitPlane;
+            }
+        }
+    }
+}
+
 /// Clears the display
 pub fn op_00E0(context: *Chip8Context) void {
     for (&(context.display)) |*row| {
@@ -308,7 +330,7 @@ pub fn op_ANNN(context: *Chip8Context, instruction: u16) void {
 /// Jumps to address NNN plus value in V0
 /// Only used by: CHIP-8
 pub fn op_BNNN(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can only run in CHIP-8 mode");
+    if (context.type == InterpreterType.schip) logUnexpectedInstruct(instruction, "Can't run in SCHIP mode");
 
     const address = utils.getLastThreeNibbles(instruction);
     context.pc = address + context.v[0];

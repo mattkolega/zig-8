@@ -136,6 +136,7 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
     switch (utils.getFirstNibble(instruction)) {
         0x0 => switch (utils.getThirdNibble(instruction)) {
             0xC  => opcodes.op_00CN(context, instruction),
+            0xD  => opcodes.op_00DN(context, instruction),
             0xE  => switch (utils.getFourthNibble(instruction)) {
                 0x0  => opcodes.op_00E0(context),
                 0xE  => opcodes.op_00EE(context),
@@ -172,10 +173,10 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
         },
         0x9 => opcodes.op_9XY0(context, instruction),
         0xA => opcodes.op_ANNN(context, instruction),
-        0xB => if (context.type == InterpreterType.chip8) {
-            opcodes.op_BNNN(context, instruction);
-        } else {
+        0xB => if (context.type == InterpreterType.schip) {
             opcodes.op_BXNN(context, instruction);
+        } else {
+            opcodes.op_BNNN(context, instruction);
         },
         0xC => opcodes.op_CXNN(context, instruction, rand),
         0xD => switch (utils.getFourthNibble(instruction)) {
