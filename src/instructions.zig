@@ -11,9 +11,9 @@ const utils = @import("utils.zig");
 
 
 /// Scrolls screen down by N pixels
-/// Only used by: SCHIP
+/// Only used by: SCHIP, XO-CHIP
 pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
     // Scroll by 2n if lores mode
     const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
@@ -24,8 +24,10 @@ pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
         if ((index + scrollAmount) > 63) {
             continue;
         } else {
-            context.display[index+scrollAmount] = context.display[index];
-            if (index < scrollAmount) @memset(&context.display[index], false);  // Clear pixel row
+            for (0..128) |j| {
+                context.display[index+scrollAmount][j] = (context.display[index][j] & context.currentBitPlane);
+                if (index < scrollAmount) context.display[index][j] &= ~context.currentBitPlane;
+            }
         }
     }
 }
@@ -33,7 +35,7 @@ pub fn op_00CN(context: *Chip8Context, instruction: u16) void {
 /// Clears the display
 pub fn op_00E0(context: *Chip8Context) void {
     for (&(context.display)) |*row| {
-        @memset(row, false);
+        @memset(row, 0b00 & ~context.currentBitPlane);
     }
 }
 
@@ -44,9 +46,9 @@ pub fn op_00EE(context: *Chip8Context) void {
 }
 
 /// Scrolls screen 4 pixels to the right
-/// Only used by: SCHIP
+/// Only used by: SCHIP, XO-CHIP
 pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
     // Scroll by 8 pixels if lores mode
     const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
@@ -58,17 +60,17 @@ pub fn op_00FB(context: *Chip8Context, instruction: u16) void {
             continue;
         } else {
             for (0..64) |j| {
-                context.display[j][index+scrollAmount] = context.display[j][index];
-                if (index < scrollAmount) context.display[j][index] = false;
+                context.display[j][index+scrollAmount] = (context.display[j][index] & context.currentBitPlane);
+                if (index < scrollAmount) context.display[j][index] &= ~context.currentBitPlane;
             }
         }
     }
 }
 
 /// Scrolls screen 4 pixels to the left
-/// Only used by: SCHIP
+/// Only used by: SCHIP, XO-CHIP
 pub fn op_00FC(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
     // Scroll by 8 pixels if lores mode
     const multiplicationFactor: usize = if (context.res == DisplayMode.lores) 2 else 1;
@@ -80,8 +82,8 @@ pub fn op_00FC(context: *Chip8Context, instruction: u16) void {
             continue;
         } else {
             for (0..64) |j| {
-                context.display[j][i-scrollAmount] = context.display[j][i];
-                if (i > (127 - scrollAmount)) context.display[j][i] = false;
+                context.display[j][i-scrollAmount] = (context.display[j][i] & context.currentBitPlane);
+                if (i > (127 - scrollAmount)) context.display[j][i] &= ~context.currentBitPlane;
             }
         }
     }
@@ -96,18 +98,20 @@ pub fn op_00FD(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Switches display to low-res mode (64x32)
-/// Only used by: SCHIP
+/// Only used by: SCHIP, XO-CHIP
 pub fn op_00FE(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
+    if (context.type == InterpreterType.xochip) op_00E0(context);  // Clear display if in XO-CHIP mode
     context.res = DisplayMode.lores;
 }
 
 /// Switches display to hi-res mode (128x64)
-/// Only used by: SCHIP
+/// Only used by: SCHIP, XO-CHIP
 pub fn op_00FF(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
+    if (context.type == InterpreterType.xochip) op_00E0(context);  // Clear display if in XO-CHIP mode
     context.res = DisplayMode.hires;
 }
 
@@ -466,7 +470,7 @@ pub fn op_FX65(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Stores contents of V0 to VX into rplFlags (X <= 7)
-/// Only used for: SCHIP
+/// Only used for: SCHIP, XO-CHIP
 pub fn op_FX75(context: *Chip8Context, instruction: u16) void {
     if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
@@ -483,7 +487,7 @@ pub fn op_FX75(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Loads contents of rplFlags into V0 to VX (X <= 7)
-/// Only used for: SCHIP
+/// Only used for: SCHIP, XO-CHIP
 pub fn op_FX85(context: *Chip8Context, instruction: u16) void {
     if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 

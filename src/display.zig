@@ -42,13 +42,17 @@ pub fn drawLowRes (context: *Chip8Context, instruction: u16) void {
             bitmask >>= 1;
             bitshiftAmount -= 1;
 
-            if (spriteBit ^ @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary XOR to check if pixel should be on
-                context.display[currentYCoord][currentXCoord] = true;
-                context.display[currentYCoord+1][currentXCoord] = true;
-            } else if (spriteBit & @intFromBool(context.display[currentYCoord][currentXCoord]) == 1) {  // Binary AND to check if pixel should be off
-                context.display[currentYCoord][currentXCoord] = false;
-                context.display[currentYCoord+1][currentXCoord] = false;  // Turn off pixel in next row if lores mode
-                context.v[0xF] = 1;
+            if (spriteBit == 1) {
+                if ((context.display[currentYCoord][currentXCoord] & context.currentBitPlane) > 0) {  // Check if display pixel is on
+                    // Turn off pixel
+                    context.display[currentYCoord][currentXCoord] &= ~context.currentBitPlane;
+                    context.display[currentYCoord+1][currentXCoord] &= ~context.currentBitPlane;  // Also turn on pixel in next row
+                    context.v[0xF] = 1;
+                } else {
+                    // Turn on pixel
+                    context.display[currentYCoord][currentXCoord] |= context.currentBitPlane;
+                    context.display[currentYCoord+1][currentXCoord] |= context.currentBitPlane;  // Also turn on pixel in next row
+                }
             }
         }
     }
@@ -87,11 +91,13 @@ pub fn drawHighRes (context: *Chip8Context, instruction: u16) void {
             bitshiftAmount -= 1;
 
             if (spriteBit == 1) {
-                if (context.display[currentYCoord][currentXCoord]) {
-                    context.display[currentYCoord][currentXCoord] = false;
+                if ((context.display[currentYCoord][currentXCoord] & context.currentBitPlane) > 0) {  // Check if display pixel is on
+                    // Turn off pixel
+                    context.display[currentYCoord][currentXCoord] &= ~context.currentBitPlane;
                     context.v[0xF] = 1;
                 } else {
-                    context.display[currentYCoord][currentXCoord] = true;
+                    // Turn on pixel
+                    context.display[currentYCoord][currentXCoord] |= context.currentBitPlane;
                 }
             }
         }
@@ -130,11 +136,13 @@ pub fn drawBigSprite(context: *Chip8Context, instruction: u16) void {
             bitshiftAmount -= 1;
 
             if (spriteBit == 1) {
-                if (context.display[currentYCoord][currentXCoord]) {
-                    context.display[currentYCoord][currentXCoord] = false;
+                if ((context.display[currentYCoord][currentXCoord] & context.currentBitPlane) > 0) {  // Check if display pixel is turned on
+                    // Turn off pixel
+                    context.display[currentYCoord][currentXCoord] &= ~context.currentBitPlane;
                     context.v[0xF] = 1;
                 } else {
-                    context.display[currentYCoord][currentXCoord] = true;
+                    // Turn on pixel
+                    context.display[currentYCoord][currentXCoord] |= context.currentBitPlane;
                 }
             }
         }

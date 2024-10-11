@@ -138,7 +138,7 @@ export fn frame() void {
 fn updateFramebuffer() void {
     for (0.., chip8Context.display) |i, row| {
         for (0.., row) |j, item| {
-            if (item == true) {
+            if (item == 0b11) {
                 framebuffer[i][j] = 0xFFFFFFFF;
             } else {
                 framebuffer[i][j] = 0xFF000000;
