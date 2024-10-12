@@ -397,12 +397,28 @@ pub fn op_EXA1(context: *Chip8Context, instruction: u16) void {
     }
 }
 
-// Set I to NNNN
-pub fn op_F000(context: *Chip8Context) void {
+/// Sets I to NNNN
+/// Only used by: XO-CHIP
+pub fn op_F000(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.xochip) logUnexpectedInstruct(instruction, "Can only run in XO-CHIP mode");
+
     const address = utils.getNextWord(&context.memory, context.pc);
     context.pc += 2;
 
     context.index = address;
+}
+
+/// Selects bit plane to draw on
+/// Only used by: XO-CHIP
+pub fn op_FN01(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.xochip) logUnexpectedInstruct(instruction, "Can only run in XO-CHIP mode");
+
+    const bitPlane = utils.getSecondNibble(instruction);
+    if (bitPlane > 3) {
+        logErrInInstruct(instruction, "N must be >= 0 and <= 3");
+        return;
+    }
+    context.currentBitPlane = @truncate(bitPlane);
 }
 
 /// Sets VX to delayTimer value
@@ -463,9 +479,9 @@ pub fn op_FX29(context: *Chip8Context, instruction: u16) void {
 }
 
 /// Sets index register to address corresponding to a large hexadecimal character
-/// Only used by: SCHIP
+/// Only used by: SCHIP, XO-CHIP
 pub fn op_FX30(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.chip8) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
 
     const xRegisterIndex = utils.getSecondNibble(instruction);
     context.index = 0xA0 + (context.v[xRegisterIndex] * 10);  // Large font data begins at memory address 0xA0
