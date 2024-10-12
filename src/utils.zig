@@ -1,7 +1,7 @@
 //! Helper functions to cut down on repeated code
 
 /// Gets the next 16-bit word
-pub fn getNextWord(memory: *[4096]u8, pc: u16) u16 {
+pub fn getNextWord(memory: *[64 * 1024]u8, pc: u16) u16 {
     const byteOne: u16 = memory[pc];
     const byteTwo: u16 = memory[pc + 1];
     return byteOne << 8 | byteTwo;

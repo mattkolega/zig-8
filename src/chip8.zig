@@ -19,7 +19,7 @@ pub const DisplayMode = enum {
 
 pub const Chip8Context = struct {
     type: InterpreterType,                 // Variant which is being emulated
-    memory: [4096]u8,                      // 4KB of RAM
+    memory: [64 * 1024]u8,                 // 64KB of RAM
     display: [64][128]u2,                  // Display is 128 pixels wide and 64 pixels high
     currentBitPlane: u2 = 0b11,
     res: DisplayMode = DisplayMode.lores,  // Dictates what resolution to render at. Doesn't change in CHIP-8 mode
@@ -57,9 +57,15 @@ fn loadRom(context: *Chip8Context, allocator: std.mem.Allocator) !void {
         var buffered = std.io.bufferedReader(file.reader());
         var reader = buffered.reader();
 
-        const bytes = reader.readAllAlloc(allocator, 4096) catch |err| switch (err) {
+        const memoryLimit: usize = switch(context.type) {
+            InterpreterType.chip8 => 3584,
+            InterpreterType.schip => 3584,
+            InterpreterType.xochip => 65024,
+        };
+
+        const bytes = reader.readAllAlloc(allocator, memoryLimit) catch |err| switch (err) {
             error.StreamTooLong => {
-                log.err("{s}", .{"ROM filesize is too large to fit in CHIP-8 memory."});
+                log.err("{s}", .{"ROM filesize is too large to fit in memory."});
                 return error.FileTooBig;
             },
             else => return err,
