@@ -127,9 +127,7 @@ fn loadFontData(context: *Chip8Context) void {
 
 pub fn tick(context: *Chip8Context, rand: std.Random) void {
     // Fetch instruction
-    const byteOne: u16 = context.memory[context.pc];
-    const byteTwo: u16 = context.memory[context.pc + 1];
-    const instruction = byteOne << 8 | byteTwo;
+    const instruction = utils.getNextWord(&context.memory, context.pc);
     context.pc += 2;
 
     // Decode and execute
@@ -190,6 +188,7 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
         },
         0xF => switch (utils.getThirdNibble(instruction)) {
             0x0  => switch (utils.getFourthNibble(instruction)) {
+                0x0  => opcodes.op_F000(context),
                 0x7  => opcodes.op_FX07(context, instruction),
                 0xA  => opcodes.op_FX0A(context, instruction),
                 else => logUnknownInstruct(instruction),

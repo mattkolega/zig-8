@@ -377,7 +377,11 @@ pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
 pub fn op_EX9E(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     if (context.keyState[context.v[xRegisterIndex]] == true) {
-        context.pc += 2;
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000) {
+            context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
+        } else {
+            context.pc += 2;
+        }
     }
 }
 
@@ -385,8 +389,20 @@ pub fn op_EX9E(context: *Chip8Context, instruction: u16) void {
 pub fn op_EXA1(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     if (context.keyState[context.v[xRegisterIndex]] == false) {
-        context.pc += 2;
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000) {
+            context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
+        } else {
+            context.pc += 2;
+        }
     }
+}
+
+// Set I to NNNN
+pub fn op_F000(context: *Chip8Context) void {
+    const address = utils.getNextWord(&context.memory, context.pc);
+    context.pc += 2;
+
+    context.index = address;
 }
 
 /// Sets VX to delayTimer value
