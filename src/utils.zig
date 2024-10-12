@@ -1,5 +1,12 @@
 //! Helper functions to cut down on repeated code
 
+/// Gets the next 16-bit word
+pub fn getNextWord(memory: *[4096]u8, pc: u16) u16 {
+    const byteOne: u16 = memory[pc];
+    const byteTwo: u16 = memory[pc + 1];
+    return byteOne << 8 | byteTwo;
+}
+
 /// Doubles each bit in a byte e.g. 10101010 to 1100110011001100
 pub fn byteToDoubleByte(byte: u8) u16 {
     var doubleByte: u16 = 0;
