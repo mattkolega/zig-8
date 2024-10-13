@@ -160,7 +160,12 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
         0x2 => opcodes.op_2NNN(context, instruction),
         0x3 => opcodes.op_3XNN(context, instruction),
         0x4 => opcodes.op_4XNN(context, instruction),
-        0x5 => opcodes.op_5XY0(context, instruction),
+        0x5 => switch (utils.getFourthNibble(instruction)) {
+            0x0  => opcodes.op_5XY0(context, instruction),
+            0x2  => opcodes.op_5XY2(context, instruction),
+            0x3  => opcodes.op_5XY3(context, instruction),
+            else => logUnknownInstruct(instruction),
+        },
         0x6 => opcodes.op_6XNN(context, instruction),
         0x7 => opcodes.op_7XNN(context, instruction),
         0x8 => switch (utils.getFourthNibble(instruction)) {

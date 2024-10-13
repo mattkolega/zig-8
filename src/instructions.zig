@@ -189,6 +189,48 @@ pub fn op_5XY0(context: *Chip8Context, instruction: u16) void {
     }
 }
 
+/// Saves VX - VY inclusive from memory starting at I
+/// Only used by: XO-CHIP
+pub fn op_5XY2(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.xochip) logUnexpectedInstruct(instruction, "Can only run in XO-CHIP mode");
+
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+    const yRegisterIndex = utils.getThirdNibble(instruction);
+
+    if (xRegisterIndex < yRegisterIndex) {
+        for(xRegisterIndex..yRegisterIndex+1) |i| {
+            context.memory[context.index] = context.v[i];
+            context.index += 1;
+        }
+    } else {
+        for(yRegisterIndex..xRegisterIndex+1) |i| {
+            context.memory[context.index] = context.v[i];
+            context.index += 1;
+        }
+    }
+}
+
+/// Loads VX - VY inclusive from memory starting at I
+/// Only used by: XO-CHIP
+pub fn op_5XY3(context: *Chip8Context, instruction: u16) void {
+    if (context.type != InterpreterType.xochip) logUnexpectedInstruct(instruction, "Can only run in XO-CHIP mode");
+
+    const xRegisterIndex = utils.getSecondNibble(instruction);
+    const yRegisterIndex = utils.getThirdNibble(instruction);
+
+    if (xRegisterIndex < yRegisterIndex) {
+        for(xRegisterIndex..yRegisterIndex+1) |i| {
+            context.v[i] = context.memory[context.index];
+            context.index += 1;
+        }
+    } else {
+        for(yRegisterIndex..xRegisterIndex+1) |i| {
+            context.v[i] = context.memory[context.index];
+            context.index += 1;
+        }
+    }
+}
+
 /// Sets register VX to value NN
 pub fn op_6XNN(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
