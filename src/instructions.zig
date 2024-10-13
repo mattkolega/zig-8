@@ -463,6 +463,14 @@ pub fn op_FN01(context: *Chip8Context, instruction: u16) void {
     context.currentBitPlane = @truncate(bitPlane);
 }
 
+/// Loads audio pattern at I into audio buffer
+/// Only used by: XO-CHIP
+pub fn op_F002(context: *Chip8Context, instruction: u16) void {
+    _ = context;
+    _ = instruction;
+    return;
+}
+
 /// Sets VX to delayTimer value
 pub fn op_FX07(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
@@ -543,6 +551,14 @@ pub fn op_FX33(context: *Chip8Context, instruction: u16) void {
     for (0..3) |i| {
         context.memory[context.index + i] = numberDigits[i];
     }
+}
+
+/// Sets audio pitch for audio playback
+/// Only used by: XO-CHIP
+pub fn op_FX3A(context: *Chip8Context, instruction: u16) void {
+    _ = context;
+    _ = instruction;
+    return;
 }
 
 /// Writes registers to memory

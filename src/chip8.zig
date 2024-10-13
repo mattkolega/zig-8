@@ -201,6 +201,7 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
             0x0  => switch (utils.getFourthNibble(instruction)) {
                 0x0  => opcodes.op_F000(context, instruction),
                 0x1  => opcodes.op_FN01(context, instruction),
+                0x2  => opcodes.op_F002(context, instruction),
                 0x7  => opcodes.op_FX07(context, instruction),
                 0xA  => opcodes.op_FX0A(context, instruction),
                 else => logUnknownInstruct(instruction),
@@ -215,6 +216,7 @@ pub fn tick(context: *Chip8Context, rand: std.Random) void {
             0x3  => switch (utils.getFourthNibble(instruction)) {
                 0x0  => opcodes.op_FX30(context, instruction),
                 0x3  => opcodes.op_FX33(context, instruction),
+                0xA  => opcodes.op_FX3A(context, instruction),
                 else => logUnknownInstruct(instruction)
             },
             0x5  => opcodes.op_FX55(context, instruction),
