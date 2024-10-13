@@ -466,8 +466,8 @@ pub fn op_FN01(context: *Chip8Context, instruction: u16) void {
 /// Loads audio pattern at I into audio buffer
 /// Only used by: XO-CHIP
 pub fn op_F002(context: *Chip8Context, instruction: u16) void {
-    _ = context;
-    _ = instruction;
+    if (context.type != InterpreterType.xochip) logUnexpectedInstruct(instruction, "Can only run in XO-CHIP mode");
+
     return;
 }
 
@@ -556,8 +556,8 @@ pub fn op_FX33(context: *Chip8Context, instruction: u16) void {
 /// Sets audio pitch for audio playback
 /// Only used by: XO-CHIP
 pub fn op_FX3A(context: *Chip8Context, instruction: u16) void {
-    _ = context;
-    _ = instruction;
+    if (context.type != InterpreterType.xochip) logUnexpectedInstruct(instruction, "Can only run in XO-CHIP mode");
+
     return;
 }
 
