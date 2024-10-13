@@ -411,7 +411,7 @@ pub fn op_DXYN(context: *Chip8Context, instruction: u16) void {
 /// Draws 16x16 sprite to display
 /// Only used by: SCHIP
 pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
-    if (context.type != InterpreterType.schip) logUnexpectedInstruct(instruction, "Can only run in SCHIP mode");
+    if (context.type == InterpreterType.schip) logUnexpectedInstruct(instruction, "Can't run in CHIP-8 mode");
     display.drawBigSprite(context, instruction);
 }
 
