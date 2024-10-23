@@ -13,9 +13,11 @@ const log = @import("logger.zig");
 pub fn processArgs(allocator: std.mem.Allocator) !Parameters {
     const params = comptime clap.parseParamsComptime(
         \\-h, --help            Display this help message and exit.
-        \\-c, --cycles <usize>  Set the number of cycles per second for the interpreter.
+        \\-s, --speed <usize>   Set the number of cycles per second for the interpreter.
         \\-m, --machine <str>   Set the interpreter type.
-        \\                      Possible values: chip8 | schip | xochip
+        \\                      Accepted values: chip8 | schip | xochip
+        \\-c, --clipping <str>  Enable/disable sprite clipping.
+        \\                      Accepted values: on | off
     );
 
     // Setup parser
@@ -37,14 +39,32 @@ pub fn processArgs(allocator: std.mem.Allocator) !Parameters {
 
     var interpreterParams = std.mem.zeroInit(Parameters, .{});
 
-    if (res.args.cycles) |arg| {
+    if (res.args.speed) |arg| {
         interpreterParams.cyclesPerSecond = arg;
     }
     if (res.args.machine) |arg| {
         interpreterParams.machineType = std.meta.stringToEnum(InterpreterType, arg) orelse {
             log.err("{s}", .{"Unknown machine type given as program argument. Use -h or --help to check valid arguments."});
-            return error.InvalidMachineType;
+            return error.InvalidArg;
         };
+    }
+    if (res.args.clipping) |arg| {
+        if (std.mem.eql(u8, arg, "on")) {
+            interpreterParams.clipping = true;
+        } else if (std.mem.eql(u8, arg, "off")) {
+            interpreterParams.clipping = false;
+        } else {
+            log.err("{s}", .{"Invalid value given to clipping argument. Use -h or --help to check valid values."});
+            return error.InvalidArg;
+        }
+    } else {
+        // If clipping argument isn't provided then set based on what
+        // the default behaviour should be for the interpreter type
+        switch (interpreterParams.machineType) {
+            InterpreterType.chip8 => interpreterParams.clipping = true,
+            InterpreterType.schip => interpreterParams.clipping = true,
+            InterpreterType.xochip => interpreterParams.clipping = false,
+        }
     }
 
     return interpreterParams;

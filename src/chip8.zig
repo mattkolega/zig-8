@@ -23,6 +23,7 @@ pub const Chip8Context = struct {
     display: [64][128]u2,                  // Display is 128 pixels wide and 64 pixels high
     currentBitPlane: u2 = 0b11,
     res: DisplayMode = DisplayMode.lores,  // Dictates what resolution to render at. Doesn't change in CHIP-8 mode
+    clipping: bool,                        // Dictates whether sprites are clipped or wrapped
     stack: [16]u16,
     sp: u8,                                // Stack pointer - points to first available stack location
     pc: u16 = 512,                         // Program counter
@@ -32,12 +33,12 @@ pub const Chip8Context = struct {
     v: [16]u8,                             // Variable registers
     keyState: [16]bool,                    // Tracks whether keys corresponding to hex chars are pressed or not
     previousKeyState: [16]bool,            // Used to track key press and release for FX0A
-    rplFlags: [16]u8,                      // RPL user flags found in HP-48. Not used in CHIP-8 mode
+    rplFlags: [16]u8,                      // RPL user flags. Not used in CHIP-8 mode
 };
 
 /// Creates a CHIP-8 context struct to store emulator state
-pub fn createContext(interpreter: InterpreterType, allocator: std.mem.Allocator) !Chip8Context {
-    var context: Chip8Context = std.mem.zeroInit(Chip8Context, .{ .type = interpreter });
+pub fn createContext(interpreter: InterpreterType, clipping: bool, allocator: std.mem.Allocator) !Chip8Context {
+    var context: Chip8Context = std.mem.zeroInit(Chip8Context, .{ .type = interpreter, .clipping = clipping });
     try loadRom(&context, allocator);
     loadFontData(&context);
 
