@@ -47,10 +47,18 @@ pub fn createContext(interpreter: InterpreterType, clipping: bool, allocator: st
 
 /// Reads .ch8 ROM file and loads contents into memory
 fn loadRom(context: *Chip8Context, allocator: std.mem.Allocator) !void {
-    const filePath = try nfd.openFileDialog("ch8", null);
+    const filePath = try nfd.openFileDialog("ch8,sc8,xo8", null);
 
     if (filePath) |path| {
         defer nfd.freePath(path);
+
+        const fileExtension = std.fs.path.extension(path);
+
+        if (std.mem.eql(u8, fileExtension, ".sc8") and context.type != InterpreterType.schip) {
+            log.warn("{s}", .{".sc8 rom loading outside of SCHIP mode"});
+        } else if (std.mem.eql(u8, fileExtension, ".xo8") and context.type != InterpreterType.xochip) {
+            log.warn("{s}", .{".xo8 rom loading outside of XO-CHIP mode"});
+        }
 
         const file = try std.fs.openFileAbsolute(path, .{});
         defer file.close();
@@ -58,7 +66,7 @@ fn loadRom(context: *Chip8Context, allocator: std.mem.Allocator) !void {
         var buffered = std.io.bufferedReader(file.reader());
         var reader = buffered.reader();
 
-        const memoryLimit: usize = switch(context.type) {
+        const memoryLimit: usize = switch (context.type) {
             InterpreterType.chip8 => 3584,
             InterpreterType.schip => 3584,
             InterpreterType.xochip => 65024,
