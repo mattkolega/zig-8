@@ -24,7 +24,11 @@ pub fn drawLowRes (context: *Chip8Context, instruction: u16) void {
 
     var i: usize = 0;
     while (i < spriteRows) : (i += 2) {
-        const currentYCoord = yCoord + i;  // Increment yCoord for each row
+        const currentYCoord = blk: {
+            var coord = yCoord + i;
+            if (!context.clipping) coord %= 64;  // Wrap sprite if clipping is off
+            break :blk coord;
+        };
         if (currentYCoord > 63) break;
 
         const spriteByte = context.memory[spriteAddress];
@@ -36,8 +40,13 @@ pub fn drawLowRes (context: *Chip8Context, instruction: u16) void {
         var bitshiftAmount: isize = 15;
 
         for (0..16) |j| {
-            const currentXCoord = (xCoord + j);  // Increment xCoord for each column
+            const currentXCoord = blk: {
+                var coord = xCoord + j;  // Increment xCoord for each column
+                if (!context.clipping) coord %= 128;  // Wrap sprite if clipping is off
+                break :blk coord;
+            };
             if (currentXCoord > 127) break;
+
             const spriteBit: u16 = (spriteRow & bitmask) >> @intCast(bitshiftAmount);
             bitmask >>= 1;
             bitshiftAmount -= 1;
@@ -74,7 +83,11 @@ pub fn drawHighRes (context: *Chip8Context, instruction: u16) void {
     const spriteAddress = context.index;
 
     for (0..spriteRows) |i| {
-        const currentYCoord = yCoord + i;  // Increment yCoord for each row
+        const currentYCoord = blk: {
+            var coord = yCoord + i;
+            if (!context.clipping) coord %= 64;  // Wrap sprite if clipping is off
+            break :blk coord;
+        };
         if (currentYCoord > 63) break;
 
         const spriteByte = context.memory[spriteAddress + i];
@@ -84,8 +97,13 @@ pub fn drawHighRes (context: *Chip8Context, instruction: u16) void {
         var bitshiftAmount: isize = 7;
 
         for (0..8) |j| {
-            const currentXCoord = xCoord + j;  // Increment xCoord for each column
+            const currentXCoord = blk: {
+                var coord = xCoord + j;  // Increment xCoord for each column
+                if (!context.clipping) coord %= 128;  // Wrap sprite if clipping is off
+                break :blk coord;
+            };
             if (currentXCoord > 127) break;
+
             const spriteBit: u8 = (spriteByte & bitmask) >> @intCast(bitshiftAmount);
             bitmask >>= 1;
             bitshiftAmount -= 1;
@@ -118,7 +136,11 @@ pub fn drawBigSprite(context: *Chip8Context, instruction: u16) void {
     var spriteAddress = context.index;
 
     for (0..16) |i| {
-        const currentYCoord = yCoord + i;
+        const currentYCoord = blk: {
+            var coord = yCoord + i;
+            if (!context.clipping) coord %= 64;  // Wrap sprite if clipping is off
+            break :blk coord;
+        };
         if (currentYCoord > 63) break;
 
         const spriteByte = @as(u16, context.memory[spriteAddress]) << 8 | context.memory[spriteAddress + 1];
@@ -128,7 +150,11 @@ pub fn drawBigSprite(context: *Chip8Context, instruction: u16) void {
         var bitshiftAmount: isize = 15;
 
         for (0..16) |j| {
-            const currentXCoord = xCoord + j;  // Increment xCoord for each column
+            const currentXCoord = blk: {
+                var coord = xCoord + j;  // Increment xCoord for each column
+                if (!context.clipping) coord %= 128;  // Wrap sprite if clipping is off
+                break :blk coord;
+            };
             if (currentXCoord > 127) break;
 
             const spriteBit: u16 = (spriteByte & bitmask) >> @intCast(bitshiftAmount);
