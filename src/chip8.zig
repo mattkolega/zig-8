@@ -21,7 +21,7 @@ pub const Chip8Context = struct {
     type: InterpreterType,                 // Variant which is being emulated
     memory: [64 * 1024]u8,                 // 64KB of RAM
     display: [64][128]u2,                  // Display is 128 pixels wide and 64 pixels high
-    currentBitPlane: u2 = 0b11,
+    currentBitPlane: u2 = 0b01,
     res: DisplayMode = DisplayMode.lores,  // Dictates what resolution to render at. Doesn't change in CHIP-8 mode
     clipping: bool,                        // Dictates whether sprites are clipped or wrapped
     stack: [16]u16,

@@ -138,11 +138,12 @@ export fn frame() void {
 
 fn updateFramebuffer() void {
     for (0.., chip8Context.display) |i, row| {
-        for (0.., row) |j, item| {
-            if (item == 0b11) {
-                framebuffer[i][j] = 0xFFFFFFFF;
-            } else {
-                framebuffer[i][j] = 0xFF000000;
+        for (0.., row) |j, pixel| {
+            switch (pixel) {  // Color data needs to be sent as ABGR
+                0b00 => framebuffer[i][j] = 0xFF000000,
+                0b01 => framebuffer[i][j] = 0xFFFFFFFF,
+                0b10 => framebuffer[i][j] = 0xFFFF0000,
+                0b11 => framebuffer[i][j] = 0x0000FF00,
             }
         }
     }
