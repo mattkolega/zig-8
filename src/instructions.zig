@@ -165,7 +165,11 @@ pub fn op_3XNN(context: *Chip8Context, instruction: u16) void {
     const value = utils.getLastHalfInstruct(instruction);
 
     if (context.v[xRegisterIndex] == value) {
-        context.pc += 2;
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000 and context.type == InterpreterType.xochip) {
+            context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
+        } else {
+            context.pc += 2;
+        }
     }
 }
 
@@ -175,7 +179,11 @@ pub fn op_4XNN(context: *Chip8Context, instruction: u16) void {
     const value = utils.getLastHalfInstruct(instruction);
 
     if (context.v[xRegisterIndex] != value) {
-        context.pc += 2;
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000 and context.type == InterpreterType.xochip) {
+            context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
+        } else {
+            context.pc += 2;
+        }
     }
 }
 
@@ -185,7 +193,11 @@ pub fn op_5XY0(context: *Chip8Context, instruction: u16) void {
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
     if (context.v[xRegisterIndex] == context.v[yRegisterIndex]) {
-        context.pc += 2;
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000 and context.type == InterpreterType.xochip) {
+            context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
+        } else {
+            context.pc += 2;
+        }
     }
 }
 
@@ -359,7 +371,11 @@ pub fn op_9XY0(context: *Chip8Context, instruction: u16) void {
     const yRegisterIndex = utils.getThirdNibble(instruction);
 
     if (context.v[xRegisterIndex] != context.v[yRegisterIndex]) {
-        context.pc += 2;
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000 and context.type == InterpreterType.xochip) {
+            context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
+        } else {
+            context.pc += 2;
+        }
     }
 }
 
@@ -419,7 +435,7 @@ pub fn op_DXY0(context: *Chip8Context, instruction: u16) void {
 pub fn op_EX9E(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     if (context.keyState[context.v[xRegisterIndex]] == true) {
-        if (utils.getNextWord(&context.memory, context.pc) == 0xF000) {
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000 and context.type == InterpreterType.xochip) {
             context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
         } else {
             context.pc += 2;
@@ -431,7 +447,7 @@ pub fn op_EX9E(context: *Chip8Context, instruction: u16) void {
 pub fn op_EXA1(context: *Chip8Context, instruction: u16) void {
     const xRegisterIndex = utils.getSecondNibble(instruction);
     if (context.keyState[context.v[xRegisterIndex]] == false) {
-        if (utils.getNextWord(&context.memory, context.pc) == 0xF000) {
+        if (utils.getNextWord(&context.memory, context.pc) == 0xF000 and context.type == InterpreterType.xochip) {
             context.pc += 4;  // Increment PC by 4 since F000 is a 4 byte opcode
         } else {
             context.pc += 2;
